@@ -4,6 +4,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
 import { IdentityModule } from './modules/identity/identity.module';
+import { WorkspaceModule } from './modules/workspace/workspace.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { IdentityModule } from './modules/identity/identity.module';
     }),
 
     IdentityModule,
+    WorkspaceModule,
   ],
 })
 export class AppModule { }

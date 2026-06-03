@@ -58,5 +58,9 @@ import { UserController } from './presentation/controllers/user.controller';
             useClass: JwtTokenService,
         },
     ],
+    exports: [
+        JwtAuthGuard,
+        TOKEN_SERVICE,
+    ],
 })
 export class IdentityModule { }

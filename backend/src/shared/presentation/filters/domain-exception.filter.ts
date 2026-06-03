@@ -7,6 +7,9 @@ import {
 import type { Response } from 'express';
 
 import { IdentityDomainError } from '../../../modules/identity/domain/errors/identity-domain.errors';
+import { WorkspaceDomainError } from '../../../modules/workspace/domain/errors/workspace-domain.errors';
+
+type DomainException = IdentityDomainError | WorkspaceDomainError;
 
 type ErrorResponseBody = {
     statusCode: number;
@@ -14,9 +17,9 @@ type ErrorResponseBody = {
     message: string;
 };
 
-@Catch(IdentityDomainError)
-export class DomainExceptionFilter implements ExceptionFilter<IdentityDomainError> {
-    catch(exception: IdentityDomainError, host: ArgumentsHost): void {
+@Catch(IdentityDomainError, WorkspaceDomainError)
+export class DomainExceptionFilter implements ExceptionFilter<DomainException> {
+    catch(exception: DomainException, host: ArgumentsHost): void {
         const context = host.switchToHttp();
         const response = context.getResponse<Response>();
 
@@ -33,8 +36,11 @@ export class DomainExceptionFilter implements ExceptionFilter<IdentityDomainErro
         response.status(statusCode).json(body);
     }
 
-    private getStatusCode(exception: IdentityDomainError): number {
+    private getStatusCode(exception: DomainException): number {
         switch (exception.name) {
+            /**
+             * Identity errors
+             */
             case 'UserAlreadyExistsError':
                 return HttpStatus.CONFLICT;
 
@@ -54,13 +60,46 @@ export class DomainExceptionFilter implements ExceptionFilter<IdentityDomainErro
             case 'UserProfileUserMismatchError':
                 return HttpStatus.BAD_REQUEST;
 
+            /**
+             * Workspace errors
+             */
+            case 'WorkspaceAlreadyExistsError':
+            case 'WorkspaceMemberAlreadyExistsError':
+                return HttpStatus.CONFLICT;
+
+            case 'WorkspaceNotFoundError':
+            case 'WorkspaceMemberUserNotFoundError':
+            case 'WorkspaceMemberNotFoundError':
+            case 'WorkspaceRoleNotFoundError':
+                return HttpStatus.NOT_FOUND;
+
+            case 'WorkspaceAccessDeniedError':
+                return HttpStatus.FORBIDDEN;
+
+            case 'WorkspaceOwnerRoleNotFoundError':
+                return HttpStatus.INTERNAL_SERVER_ERROR;
+
+            case 'InvalidWorkspaceIdError':
+            case 'InvalidWorkspaceMemberIdError':
+            case 'InvalidWorkspaceUserIdError':
+            case 'InvalidWorkspaceRoleIdError':
+            case 'InvalidWorkspaceNameError':
+            case 'InvalidWorkspaceSlugError':
+            case 'InvalidWorkspaceDescriptionError':
+            case 'WorkspaceMemberWorkspaceMismatchError':
+            case 'WorkspaceOwnerCannotBeRemovedError':
+                return HttpStatus.BAD_REQUEST;
+
             default:
                 return HttpStatus.BAD_REQUEST;
         }
     }
 
-    private getSafeMessage(exception: IdentityDomainError): string {
+    private getSafeMessage(exception: DomainException): string {
         switch (exception.name) {
+            /**
+             * Identity errors
+             */
             case 'UserAlreadyExistsError':
                 return 'Unable to complete registration.';
 
@@ -93,6 +132,62 @@ export class DomainExceptionFilter implements ExceptionFilter<IdentityDomainErro
 
             case 'UserProfileUserMismatchError':
                 return 'User profile does not belong to this user.';
+            case 'WorkspaceOwnerCannotBeRemovedError':
+                return 'The owner of the workspace cannot be removed.';
+
+            /**
+             * Workspace errors
+             */
+            case 'WorkspaceAlreadyExistsError':
+                return 'Unable to create workspace.';
+
+            case 'WorkspaceMemberAlreadyExistsError':
+                return 'User is already a member of this workspace.';
+
+            case 'WorkspaceNotFoundError':
+                return 'Workspace not found.';
+
+            case 'WorkspaceAccessDeniedError':
+                return 'You do not have access to this workspace.';
+
+            case 'WorkspaceOwnerRoleNotFoundError':
+                return 'Workspace setup is not configured.';
+
+            case 'InvalidWorkspaceIdError':
+                return 'Invalid workspace id.';
+
+            case 'InvalidWorkspaceMemberIdError':
+                return 'Invalid workspace member id.';
+
+            case 'InvalidWorkspaceUserIdError':
+                return 'Invalid workspace user id.';
+
+            case 'InvalidWorkspaceRoleIdError':
+                return 'Invalid workspace role id.';
+
+            case 'InvalidWorkspaceNameError':
+                return 'Invalid workspace name.';
+
+            case 'InvalidWorkspaceSlugError':
+                return 'Invalid workspace slug.';
+
+            case 'InvalidWorkspaceDescriptionError':
+                return 'Invalid workspace description.';
+
+            /**
+             * Workspace member errors
+             */
+            case 'WorkspaceMemberUserNotFoundError':
+                return 'User was not found.';
+
+            case 'WorkspaceRoleNotFoundError':
+                return 'Workspace role was not found.';
+
+            case 'WorkspaceMemberNotFoundError':
+                return 'Workspace member was not found.';
+
+            case 'WorkspaceMemberWorkspaceMismatchError':
+                return 'Workspace member does not belong to this workspace.';
 
             default:
                 return 'Invalid request.';
@@ -107,11 +202,17 @@ export class DomainExceptionFilter implements ExceptionFilter<IdentityDomainErro
             case HttpStatus.UNAUTHORIZED:
                 return 'Unauthorized';
 
+            case HttpStatus.FORBIDDEN:
+                return 'Forbidden';
+
             case HttpStatus.NOT_FOUND:
                 return 'Not Found';
 
             case HttpStatus.CONFLICT:
                 return 'Conflict';
+
+            case HttpStatus.INTERNAL_SERVER_ERROR:
+                return 'Internal Server Error';
 
             default:
                 return 'Domain Error';

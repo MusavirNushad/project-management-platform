@@ -1,4 +1,3 @@
-// src/modules/identity/infrastructure/security/current-user.decorator.ts
 
 import {
     createParamDecorator,

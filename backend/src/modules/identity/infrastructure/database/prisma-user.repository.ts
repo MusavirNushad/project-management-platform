@@ -57,7 +57,7 @@ export class PrismaUserRepository implements UserRepositoryPort {
             return UserMapper.toDomain(savedUser);
         } catch (error) {
             if (this.isUniqueConstraintError(error)) {
-                throw new UserAlreadyExistsError(user.getEmail());
+                throw new UserAlreadyExistsError();
             }
 
             throw error;

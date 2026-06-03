@@ -51,8 +51,8 @@ export class UserProfileUserMismatchError extends IdentityDomainError {
 }
 
 export class UserAlreadyExistsError extends IdentityDomainError {
-  constructor(email: string) {
-    super(`User already exists with email: ${email}`);
+  constructor() {
+    super('User already exists.');
   }
 }
 

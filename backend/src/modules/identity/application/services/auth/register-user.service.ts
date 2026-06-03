@@ -59,7 +59,7 @@ export class RegisterUserService {
         const userAlreadyExists = await this.userRepository.existsByEmail(email);
 
         if (userAlreadyExists) {
-            throw new UserAlreadyExistsError(email.value);
+            throw new UserAlreadyExistsError();
         }
 
         const passwordHash = await this.passwordHasher.hash(password);
