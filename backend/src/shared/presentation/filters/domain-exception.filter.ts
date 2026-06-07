@@ -8,8 +8,9 @@ import type { Response } from 'express';
 
 import { IdentityDomainError } from '../../../modules/identity/domain/errors/identity-domain.errors';
 import { WorkspaceDomainError } from '../../../modules/workspace/domain/errors/workspace-domain.errors';
+import { ProjectDomainError } from '../../../modules/project/domain/errors/project-domain.errors';
 
-type DomainException = IdentityDomainError | WorkspaceDomainError;
+type DomainException = IdentityDomainError | WorkspaceDomainError | ProjectDomainError;
 
 type ErrorResponseBody = {
     statusCode: number;
@@ -17,7 +18,7 @@ type ErrorResponseBody = {
     message: string;
 };
 
-@Catch(IdentityDomainError, WorkspaceDomainError)
+@Catch(IdentityDomainError, WorkspaceDomainError, ProjectDomainError)
 export class DomainExceptionFilter implements ExceptionFilter<DomainException> {
     catch(exception: DomainException, host: ArgumentsHost): void {
         const context = host.switchToHttp();
@@ -88,6 +89,40 @@ export class DomainExceptionFilter implements ExceptionFilter<DomainException> {
             case 'InvalidWorkspaceDescriptionError':
             case 'WorkspaceMemberWorkspaceMismatchError':
             case 'WorkspaceOwnerCannotBeRemovedError':
+                return HttpStatus.BAD_REQUEST;
+
+            /**
+            * Project errors
+            */
+            case 'ProjectWorkspaceNotFoundError':
+            case 'ProjectNotFoundError':
+            case 'ProjectMemberUserNotFoundError':
+            case 'ProjectMemberNotFoundError':
+                return HttpStatus.NOT_FOUND;
+
+            case 'ProjectWorkspaceAccessDeniedError':
+            case 'ProjectAccessDeniedError':
+                return HttpStatus.FORBIDDEN;
+
+            case 'ProjectMemberAlreadyExistsError':
+                return HttpStatus.CONFLICT;
+
+            case 'ProjectCreatorRoleNotFoundError':
+            case 'ProjectRoleNotFoundError':
+                return HttpStatus.INTERNAL_SERVER_ERROR;
+
+            case 'InvalidProjectIdError':
+            case 'InvalidProjectMemberIdError':
+            case 'InvalidProjectWorkspaceIdError':
+            case 'InvalidProjectUserIdError':
+            case 'InvalidProjectRoleIdError':
+            case 'InvalidProjectTitleError':
+            case 'InvalidProjectDescriptionError':
+            case 'InvalidProjectDateRangeError':
+            case 'InvalidProjectStatusError':
+            case 'ProjectWorkspaceMismatchError':
+            case 'ProjectMemberProjectMismatchError':
+            case 'ProjectCreatorCannotBeRemovedError':
                 return HttpStatus.BAD_REQUEST;
 
             default:
@@ -189,8 +224,77 @@ export class DomainExceptionFilter implements ExceptionFilter<DomainException> {
             case 'WorkspaceMemberWorkspaceMismatchError':
                 return 'Workspace member does not belong to this workspace.';
 
+            /**
+         * Project  errors
+         */
+            case 'ProjectWorkspaceNotFoundError':
+                return 'Workspace not found.';
+
+            case 'ProjectNotFoundError':
+                return 'Project not found.';
+
+            case 'ProjectWorkspaceAccessDeniedError':
+                return 'You do not have access to this workspace.';
+
+            case 'ProjectAccessDeniedError':
+                return 'You do not have access to this project.';
+
+            case 'ProjectCreatorRoleNotFoundError':
+                return 'Project setup is not configured.';
+
+            case 'ProjectRoleNotFoundError':
+                return 'Project role was not found.';
+
+            case 'ProjectMemberAlreadyExistsError':
+                return 'User is already a member of this project.';
+
+            case 'ProjectMemberUserNotFoundError':
+                return 'User was not found.';
+
+            case 'ProjectMemberNotFoundError':
+                return 'Project member was not found.';
+
+            case 'ProjectWorkspaceMismatchError':
+                return 'Project does not belong to this workspace.';
+
+            case 'ProjectMemberProjectMismatchError':
+                return 'Project member does not belong to this project.';
+
+            case 'ProjectCreatorCannotBeRemovedError':
+                return 'Project creator cannot be removed.';
+
+            case 'InvalidProjectIdError':
+                return 'Invalid project id.';
+
+            case 'InvalidProjectMemberIdError':
+                return 'Invalid project member id.';
+
+            case 'InvalidProjectWorkspaceIdError':
+                return 'Invalid project workspace id.';
+
+            case 'InvalidProjectUserIdError':
+                return 'Invalid project user id.';
+
+            case 'InvalidProjectRoleIdError':
+                return 'Invalid project role id.';
+
+            case 'InvalidProjectTitleError':
+                return 'Invalid project title.';
+
+            case 'InvalidProjectDescriptionError':
+                return 'Invalid project description.';
+
+            case 'InvalidProjectDateRangeError':
+                return 'Project start date cannot be after due date.';
+
+            case 'InvalidProjectStatusError':
+                return 'Invalid project status.';
+
+
             default:
                 return 'Invalid request.';
+
+
         }
     }
 
