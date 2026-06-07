@@ -9,8 +9,13 @@ import type { Response } from 'express';
 import { IdentityDomainError } from '../../../modules/identity/domain/errors/identity-domain.errors';
 import { WorkspaceDomainError } from '../../../modules/workspace/domain/errors/workspace-domain.errors';
 import { ProjectDomainError } from '../../../modules/project/domain/errors/project-domain.errors';
+import { TaskDomainError } from '../../../modules/task/domain/errors/task-domain.errors';
 
-type DomainException = IdentityDomainError | WorkspaceDomainError | ProjectDomainError;
+type DomainException =
+    | IdentityDomainError
+    | WorkspaceDomainError
+    | ProjectDomainError
+    | TaskDomainError;
 
 type ErrorResponseBody = {
     statusCode: number;
@@ -18,7 +23,12 @@ type ErrorResponseBody = {
     message: string;
 };
 
-@Catch(IdentityDomainError, WorkspaceDomainError, ProjectDomainError)
+@Catch(
+    IdentityDomainError,
+    WorkspaceDomainError,
+    ProjectDomainError,
+    TaskDomainError,
+)
 export class DomainExceptionFilter implements ExceptionFilter<DomainException> {
     catch(exception: DomainException, host: ArgumentsHost): void {
         const context = host.switchToHttp();
@@ -92,8 +102,8 @@ export class DomainExceptionFilter implements ExceptionFilter<DomainException> {
                 return HttpStatus.BAD_REQUEST;
 
             /**
-            * Project errors
-            */
+             * Project errors
+             */
             case 'ProjectWorkspaceNotFoundError':
             case 'ProjectNotFoundError':
             case 'ProjectMemberUserNotFoundError':
@@ -123,6 +133,44 @@ export class DomainExceptionFilter implements ExceptionFilter<DomainException> {
             case 'ProjectWorkspaceMismatchError':
             case 'ProjectMemberProjectMismatchError':
             case 'ProjectCreatorCannotBeRemovedError':
+                return HttpStatus.BAD_REQUEST;
+
+            /**
+             * Task errors
+             */
+            case 'TaskWorkspaceNotFoundError':
+            case 'TaskProjectNotFoundError':
+            case 'TaskNotFoundError':
+            case 'TaskAssigneeNotFoundError':
+            case 'TaskAssigneeUserNotFoundError':
+            case 'TaskCommentNotFoundError':
+                return HttpStatus.NOT_FOUND;
+
+            case 'TaskAccessDeniedError':
+            case 'TaskProjectAccessDeniedError':
+            case 'TaskCommentAccessDeniedError':
+                return HttpStatus.FORBIDDEN;
+
+            case 'TaskAssigneeAlreadyExistsError':
+                return HttpStatus.CONFLICT;
+
+            case 'InvalidTaskIdError':
+            case 'InvalidTaskAssigneeIdError':
+            case 'InvalidTaskCommentIdError':
+            case 'InvalidTaskWorkspaceIdError':
+            case 'InvalidTaskProjectIdError':
+            case 'InvalidTaskUserIdError':
+            case 'InvalidTaskTitleError':
+            case 'InvalidTaskDescriptionError':
+            case 'InvalidTaskCommentBodyError':
+            case 'InvalidTaskStatusError':
+            case 'InvalidTaskPriorityError':
+            case 'InvalidTaskDateRangeError':
+            case 'TaskProjectMismatchError':
+            case 'TaskAssigneeTaskMismatchError':
+            case 'TaskAssigneeUserNotProjectMemberError':
+            case 'TaskCommentTaskMismatchError':
+            case 'TaskCommentHasRepliesError':
                 return HttpStatus.BAD_REQUEST;
 
             default:
@@ -167,8 +215,6 @@ export class DomainExceptionFilter implements ExceptionFilter<DomainException> {
 
             case 'UserProfileUserMismatchError':
                 return 'User profile does not belong to this user.';
-            case 'WorkspaceOwnerCannotBeRemovedError':
-                return 'The owner of the workspace cannot be removed.';
 
             /**
              * Workspace errors
@@ -209,9 +255,6 @@ export class DomainExceptionFilter implements ExceptionFilter<DomainException> {
             case 'InvalidWorkspaceDescriptionError':
                 return 'Invalid workspace description.';
 
-            /**
-             * Workspace member errors
-             */
             case 'WorkspaceMemberUserNotFoundError':
                 return 'User was not found.';
 
@@ -224,9 +267,12 @@ export class DomainExceptionFilter implements ExceptionFilter<DomainException> {
             case 'WorkspaceMemberWorkspaceMismatchError':
                 return 'Workspace member does not belong to this workspace.';
 
+            case 'WorkspaceOwnerCannotBeRemovedError':
+                return 'The owner of the workspace cannot be removed.';
+
             /**
-         * Project  errors
-         */
+             * Project errors
+             */
             case 'ProjectWorkspaceNotFoundError':
                 return 'Workspace not found.';
 
@@ -290,11 +336,92 @@ export class DomainExceptionFilter implements ExceptionFilter<DomainException> {
             case 'InvalidProjectStatusError':
                 return 'Invalid project status.';
 
+            /**
+             * Task errors
+             */
+            case 'TaskWorkspaceNotFoundError':
+                return 'Workspace not found.';
+
+            case 'TaskProjectNotFoundError':
+                return 'Project not found.';
+
+            case 'TaskNotFoundError':
+                return 'Task not found.';
+
+            case 'TaskAssigneeUserNotFoundError':
+                return 'User was not found.';
+
+            case 'TaskAccessDeniedError':
+                return 'You do not have access to this task.';
+
+            case 'TaskProjectAccessDeniedError':
+                return 'You do not have access to this project.';
+
+            case 'TaskProjectMismatchError':
+                return 'Task does not belong to this project.';
+
+            case 'TaskAssigneeAlreadyExistsError':
+                return 'User is already assigned to this task.';
+
+            case 'TaskAssigneeNotFoundError':
+                return 'Task assignee was not found.';
+
+            case 'TaskAssigneeTaskMismatchError':
+                return 'Task assignee does not belong to this task.';
+
+            case 'TaskAssigneeUserNotProjectMemberError':
+                return 'User must be a project member before being assigned to the task.';
+
+            case 'TaskCommentNotFoundError':
+                return 'Task comment was not found.';
+
+            case 'TaskCommentTaskMismatchError':
+                return 'Task comment does not belong to this task.';
+
+            case 'TaskCommentAccessDeniedError':
+                return 'You do not have access to modify this comment.';
+
+            case 'TaskCommentHasRepliesError':
+                return 'Comment with replies cannot be deleted.';
+
+            case 'InvalidTaskIdError':
+                return 'Invalid task id.';
+
+            case 'InvalidTaskAssigneeIdError':
+                return 'Invalid task assignee id.';
+
+            case 'InvalidTaskCommentIdError':
+                return 'Invalid task comment id.';
+
+            case 'InvalidTaskWorkspaceIdError':
+                return 'Invalid workspace id.';
+
+            case 'InvalidTaskProjectIdError':
+                return 'Invalid project id.';
+
+            case 'InvalidTaskUserIdError':
+                return 'Invalid user id.';
+
+            case 'InvalidTaskTitleError':
+                return 'Invalid task title.';
+
+            case 'InvalidTaskDescriptionError':
+                return 'Invalid task description.';
+
+            case 'InvalidTaskCommentBodyError':
+                return 'Invalid task comment body.';
+
+            case 'InvalidTaskStatusError':
+                return 'Invalid task status.';
+
+            case 'InvalidTaskPriorityError':
+                return 'Invalid task priority.';
+
+            case 'InvalidTaskDateRangeError':
+                return 'Task start date cannot be after due date.';
 
             default:
                 return 'Invalid request.';
-
-
         }
     }
 
