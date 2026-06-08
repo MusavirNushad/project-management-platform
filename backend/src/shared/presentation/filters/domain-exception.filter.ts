@@ -10,12 +10,14 @@ import { IdentityDomainError } from '../../../modules/identity/domain/errors/ide
 import { WorkspaceDomainError } from '../../../modules/workspace/domain/errors/workspace-domain.errors';
 import { ProjectDomainError } from '../../../modules/project/domain/errors/project-domain.errors';
 import { TaskDomainError } from '../../../modules/task/domain/errors/task-domain.errors';
+import { SprintDomainError } from '../../../modules/sprint/domain/errors/sprint-domain.errors';
 
 type DomainException =
     | IdentityDomainError
     | WorkspaceDomainError
     | ProjectDomainError
-    | TaskDomainError;
+    | TaskDomainError
+    | SprintDomainError;
 
 type ErrorResponseBody = {
     statusCode: number;
@@ -28,6 +30,7 @@ type ErrorResponseBody = {
     WorkspaceDomainError,
     ProjectDomainError,
     TaskDomainError,
+    SprintDomainError,
 )
 export class DomainExceptionFilter implements ExceptionFilter<DomainException> {
     catch(exception: DomainException, host: ArgumentsHost): void {
@@ -171,6 +174,37 @@ export class DomainExceptionFilter implements ExceptionFilter<DomainException> {
             case 'TaskAssigneeUserNotProjectMemberError':
             case 'TaskCommentTaskMismatchError':
             case 'TaskCommentHasRepliesError':
+                return HttpStatus.BAD_REQUEST;
+
+            /**
+             * Sprint errors
+             */
+            case 'SprintWorkspaceNotFoundError':
+            case 'SprintProjectNotFoundError':
+            case 'SprintNotFoundError':
+            case 'SprintTaskReferenceNotFoundError':
+            case 'SprintTaskNotFoundError':
+                return HttpStatus.NOT_FOUND;
+
+            case 'SprintAccessDeniedError':
+            case 'SprintProjectAccessDeniedError':
+                return HttpStatus.FORBIDDEN;
+
+            case 'InvalidSprintIdError':
+            case 'InvalidSprintTaskIdError':
+            case 'InvalidSprintWorkspaceIdError':
+            case 'InvalidSprintProjectIdError':
+            case 'InvalidSprintUserIdError':
+            case 'InvalidSprintNameError':
+            case 'InvalidSprintGoalError':
+            case 'InvalidSprintStatusError':
+            case 'InvalidSprintDateRangeError':
+            case 'SprintProjectMismatchError':
+            case 'InvalidSprintPositionError':
+            case 'SprintCannotAcceptTasksError':
+            case 'SprintTaskSprintMismatchError':
+            case 'SprintTaskAlreadyRemovedError':
+            case 'SprintCannotRemoveTasksError':
                 return HttpStatus.BAD_REQUEST;
 
             default:
@@ -419,6 +453,78 @@ export class DomainExceptionFilter implements ExceptionFilter<DomainException> {
 
             case 'InvalidTaskDateRangeError':
                 return 'Task start date cannot be after due date.';
+
+            /**
+             * Sprint errors
+             */
+            case 'SprintWorkspaceNotFoundError':
+                return 'Workspace not found.';
+
+            case 'SprintProjectNotFoundError':
+                return 'Project not found.';
+
+            case 'SprintNotFoundError':
+                return 'Sprint not found.';
+
+            case 'SprintAccessDeniedError':
+                return 'You do not have access to this sprint.';
+
+            case 'SprintProjectAccessDeniedError':
+                return 'You do not have access to this project.';
+
+            case 'InvalidSprintIdError':
+                return 'Invalid sprint id.';
+
+            case 'InvalidSprintTaskIdError':
+                return 'Invalid sprint task id.';
+
+            case 'InvalidSprintWorkspaceIdError':
+                return 'Invalid workspace id.';
+
+            case 'InvalidSprintProjectIdError':
+                return 'Invalid project id.';
+
+            case 'InvalidSprintUserIdError':
+                return 'Invalid user id.';
+
+            case 'InvalidSprintNameError':
+                return 'Invalid sprint name.';
+
+            case 'InvalidSprintGoalError':
+                return 'Invalid sprint goal.';
+
+            case 'InvalidSprintStatusError':
+                return 'Invalid sprint status.';
+
+            case 'InvalidSprintDateRangeError':
+                return 'Sprint start date cannot be after end date.';
+
+            case 'SprintProjectMismatchError':
+                return 'Sprint does not belong to this project.';
+
+            case 'SprintTaskReferenceNotFoundError':
+                return 'Task was not found in this project.';
+
+            case 'TaskAlreadyInActiveSprintError':
+                return 'Task is already in an active sprint.';
+
+            case 'SprintCannotAcceptTasksError':
+                return 'Tasks can only be added to planned or active sprints.';
+
+            case 'InvalidSprintTaskPositionError':
+                return 'Invalid sprint task position.';
+
+            case 'SprintTaskNotFoundError':
+                return 'Sprint task not found.';
+
+            case 'SprintTaskSprintMismatchError':
+                return 'Sprint task does not belong to this sprint.';
+
+            case 'SprintTaskAlreadyRemovedError':
+                return 'Task is already removed from this sprint.';
+
+            case 'SprintCannotRemoveTasksError':
+                return 'Tasks can only be removed from planned or active sprints.';
 
             default:
                 return 'Invalid request.';
