@@ -11,13 +11,15 @@ import { WorkspaceDomainError } from '../../../modules/workspace/domain/errors/w
 import { ProjectDomainError } from '../../../modules/project/domain/errors/project-domain.errors';
 import { TaskDomainError } from '../../../modules/task/domain/errors/task-domain.errors';
 import { SprintDomainError } from '../../../modules/sprint/domain/errors/sprint-domain.errors';
+import { ReportDomainError } from '../../../modules/report/domain/errors/report-domain.errors';
 
 type DomainException =
     | IdentityDomainError
     | WorkspaceDomainError
     | ProjectDomainError
     | TaskDomainError
-    | SprintDomainError;
+    | SprintDomainError
+    | ReportDomainError;
 
 type ErrorResponseBody = {
     statusCode: number;
@@ -31,6 +33,7 @@ type ErrorResponseBody = {
     ProjectDomainError,
     TaskDomainError,
     SprintDomainError,
+    ReportDomainError
 )
 export class DomainExceptionFilter implements ExceptionFilter<DomainException> {
     catch(exception: DomainException, host: ArgumentsHost): void {
@@ -228,6 +231,29 @@ export class DomainExceptionFilter implements ExceptionFilter<DomainException> {
             case 'InvalidWorklogDescriptionError':
             case 'InvalidWorklogDateRangeError':
             case 'WorklogTaskMismatchError':
+                return HttpStatus.BAD_REQUEST;
+
+            /**
+             * Report errors
+             */
+            case 'ReportWorkspaceNotFoundError':
+            case 'ReportProjectNotFoundError':
+            case 'ReportNotFoundError':
+                return HttpStatus.NOT_FOUND;
+
+            case 'ReportAccessDeniedError':
+            case 'ReportProjectAccessDeniedError':
+                return HttpStatus.FORBIDDEN;
+
+            case 'InvalidReportIdError':
+            case 'InvalidReportWorkspaceIdError':
+            case 'InvalidReportProjectIdError':
+            case 'InvalidReportUserIdError':
+            case 'InvalidReportNameError':
+            case 'InvalidReportFileError':
+            case 'InvalidReportStatusError':
+            case 'InvalidReportDateRangeError':
+            case 'ReportProjectMismatchError':
                 return HttpStatus.BAD_REQUEST;
 
             default:
@@ -593,6 +619,52 @@ export class DomainExceptionFilter implements ExceptionFilter<DomainException> {
 
             case 'WorklogTaskMismatchError':
                 return 'Worklog does not belong to this task.';
+
+            /**
+             * Report errors
+             */
+
+            case 'ReportWorkspaceNotFoundError':
+                return 'Workspace not found.';
+
+            case 'ReportProjectNotFoundError':
+                return 'Project not found.';
+
+            case 'ReportNotFoundError':
+                return 'Report not found.';
+
+            case 'ReportAccessDeniedError':
+                return 'You do not have access to this report.';
+
+            case 'ReportProjectAccessDeniedError':
+                return 'You do not have access to this project.';
+
+            case 'InvalidReportIdError':
+                return 'Invalid report id.';
+
+            case 'InvalidReportWorkspaceIdError':
+                return 'Invalid workspace id.';
+
+            case 'InvalidReportProjectIdError':
+                return 'Invalid project id.';
+
+            case 'InvalidReportUserIdError':
+                return 'Invalid user id.';
+
+            case 'InvalidReportNameError':
+                return 'Invalid report name.';
+
+            case 'InvalidReportFileError':
+                return 'Invalid report file.';
+
+            case 'InvalidReportStatusError':
+                return 'Invalid report status.';
+
+            case 'InvalidReportDateRangeError':
+                return 'Report start date cannot be after end date.';
+
+            case 'ReportProjectMismatchError':
+                return 'Report does not belong to this project.';
 
             default:
                 return 'Invalid request.';
