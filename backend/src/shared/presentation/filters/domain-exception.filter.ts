@@ -207,6 +207,29 @@ export class DomainExceptionFilter implements ExceptionFilter<DomainException> {
             case 'SprintCannotRemoveTasksError':
                 return HttpStatus.BAD_REQUEST;
 
+            /**
+             * Worklog errors
+             */
+            case 'WorklogWorkspaceNotFoundError':
+            case 'WorklogProjectNotFoundError':
+            case 'WorklogTaskNotFoundError':
+            case 'WorklogNotFoundError':
+                return HttpStatus.NOT_FOUND;
+
+            case 'WorklogAccessDeniedError':
+            case 'WorklogProjectAccessDeniedError':
+                return HttpStatus.FORBIDDEN;
+
+            case 'InvalidWorklogIdError':
+            case 'InvalidWorklogWorkspaceIdError':
+            case 'InvalidWorklogProjectIdError':
+            case 'InvalidWorklogTaskIdError':
+            case 'InvalidWorklogUserIdError':
+            case 'InvalidWorklogDescriptionError':
+            case 'InvalidWorklogDateRangeError':
+            case 'WorklogTaskMismatchError':
+                return HttpStatus.BAD_REQUEST;
+
             default:
                 return HttpStatus.BAD_REQUEST;
         }
@@ -525,6 +548,51 @@ export class DomainExceptionFilter implements ExceptionFilter<DomainException> {
 
             case 'SprintCannotRemoveTasksError':
                 return 'Tasks can only be removed from planned or active sprints.';
+
+            /**
+             * Worklog errors
+             */
+            case 'WorklogWorkspaceNotFoundError':
+                return 'Workspace not found.';
+
+            case 'WorklogProjectNotFoundError':
+                return 'Project not found.';
+
+            case 'WorklogTaskNotFoundError':
+                return 'Task not found.';
+
+            case 'WorklogNotFoundError':
+                return 'Worklog not found.';
+
+            case 'WorklogAccessDeniedError':
+                return 'You do not have access to this worklog.';
+
+            case 'WorklogProjectAccessDeniedError':
+                return 'You do not have access to this project.';
+
+            case 'InvalidWorklogIdError':
+                return 'Invalid worklog id.';
+
+            case 'InvalidWorklogWorkspaceIdError':
+                return 'Invalid workspace id.';
+
+            case 'InvalidWorklogProjectIdError':
+                return 'Invalid project id.';
+
+            case 'InvalidWorklogTaskIdError':
+                return 'Invalid task id.';
+
+            case 'InvalidWorklogUserIdError':
+                return 'Invalid user id.';
+
+            case 'InvalidWorklogDescriptionError':
+                return 'Invalid worklog description.';
+
+            case 'InvalidWorklogDateRangeError':
+                return 'Worklog end time must be after start time.';
+
+            case 'WorklogTaskMismatchError':
+                return 'Worklog does not belong to this task.';
 
             default:
                 return 'Invalid request.';

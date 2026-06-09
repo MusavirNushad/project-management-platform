@@ -8,6 +8,7 @@ import { WorkspaceModule } from './modules/workspace/workspace.module';
 import { ProjectModule } from './modules/project/project.module';
 import { TaskModule } from './modules/task/task.module';
 import { SprintModule } from './modules/sprint/sprint.module';
+import { WorklogModule } from './modules/worklog/worklog.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { SprintModule } from './modules/sprint/sprint.module';
     ProjectModule,
     TaskModule,
     SprintModule,
+    WorklogModule,
   ],
 })
 export class AppModule { }
