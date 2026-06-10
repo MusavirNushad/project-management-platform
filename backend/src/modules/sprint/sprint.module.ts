@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { PrismaModule } from '../../shared/infrastructure/database/prisma.module';
 import { IdentityModule } from '../identity/identity.module';
+import { AccessControlModule } from '../access-control/access-control.module';
 
 import { SprintPermissionService } from './application/services/permissions/sprint-permission.service';
 import { CreateSprintService } from './application/services/sprints/create-sprint.service';
@@ -20,21 +21,21 @@ import { SprintController } from './presentation/controllers/sprint.controller';
 import { SprintTaskController } from './presentation/controllers/sprint-task.controller';
 
 @Module({
-    imports: [PrismaModule, IdentityModule],
-    controllers: [SprintController, SprintTaskController],
-    providers: [
-        CreateSprintService,
-        GetProjectSprintsService,
-        GetSprintByIdService,
-        UpdateSprintService,
-        SprintPermissionService,
-        AddTaskToSprintService,
-        GetSprintTasksService,
-        RemoveTaskFromSprintService,
-        {
-            provide: SPRINT_REPOSITORY,
-            useClass: PrismaSprintRepository,
-        },
-    ],
+  imports: [PrismaModule, IdentityModule, AccessControlModule],
+  controllers: [SprintController, SprintTaskController],
+  providers: [
+    CreateSprintService,
+    GetProjectSprintsService,
+    GetSprintByIdService,
+    UpdateSprintService,
+    SprintPermissionService,
+    AddTaskToSprintService,
+    GetSprintTasksService,
+    RemoveTaskFromSprintService,
+    {
+      provide: SPRINT_REPOSITORY,
+      useClass: PrismaSprintRepository,
+    },
+  ],
 })
-export class SprintModule { }
+export class SprintModule {}

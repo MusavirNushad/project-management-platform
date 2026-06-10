@@ -21,24 +21,24 @@ import { ProjectMemberController } from './presentation/controllers/project-memb
 import { ProjectController } from './presentation/controllers/project.controller';
 
 @Module({
-    imports: [PrismaModule, IdentityModule],
-    controllers: [ProjectController, ProjectMemberController],
-    providers: [
-        CreateProjectService,
-        GetWorkspaceProjectsService,
-        GetProjectByIdService,
-        UpdateProjectService,
+  imports: [PrismaModule, IdentityModule],
+  controllers: [ProjectController, ProjectMemberController],
+  providers: [
+    CreateProjectService,
+    GetWorkspaceProjectsService,
+    GetProjectByIdService,
+    UpdateProjectService,
 
-        GetProjectMembersService,
-        ProjectMemberPermissionService,
-        AddProjectMemberService,
-        UpdateProjectMemberRoleService,
-        RemoveProjectMemberService,
+    GetProjectMembersService,
+    ProjectMemberPermissionService,
+    AddProjectMemberService,
+    UpdateProjectMemberRoleService,
+    RemoveProjectMemberService,
 
-        {
-            provide: PROJECT_REPOSITORY,
-            useClass: PrismaProjectRepository,
-        },
-    ],
+    {
+      provide: PROJECT_REPOSITORY,
+      useClass: PrismaProjectRepository,
+    },
+  ],
 })
-export class ProjectModule { }
+export class ProjectModule {}

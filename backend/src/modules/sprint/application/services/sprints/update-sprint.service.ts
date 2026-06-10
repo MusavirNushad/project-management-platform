@@ -6,17 +6,17 @@ import { SPRINT_REPOSITORY } from '../../../domain/ports/sprint.repository.port'
 import type { SprintRepositoryPort } from '../../../domain/ports/sprint.repository.port';
 
 import {
-    SprintEntity,
-    type SprintStatus,
+  SprintEntity,
+  type SprintStatus,
 } from '../../../domain/entities/sprint.entity';
 
 import {
-    InvalidSprintDateRangeError,
-    InvalidSprintStatusError,
-    SprintNotFoundError,
-    SprintProjectAccessDeniedError,
-    SprintProjectNotFoundError,
-    SprintWorkspaceNotFoundError,
+  InvalidSprintDateRangeError,
+  InvalidSprintStatusError,
+  SprintNotFoundError,
+  SprintProjectAccessDeniedError,
+  SprintProjectNotFoundError,
+  SprintWorkspaceNotFoundError,
 } from '../../../domain/errors/sprint-domain.errors';
 
 import { ProjectId } from '../../../domain/value-objects/project-id.vo';
@@ -27,165 +27,162 @@ import { UserId } from '../../../domain/value-objects/user-id.vo';
 import { WorkspaceId } from '../../../domain/value-objects/workspace-id.vo';
 
 const SprintStatuses: SprintStatus[] = [
-    'PLANNED',
-    'ACTIVE',
-    'COMPLETED',
-    'CANCELLED',
+  'PLANNED',
+  'ACTIVE',
+  'COMPLETED',
+  'CANCELLED',
 ];
 
 export type UpdateSprintInput = {
-    workspaceId: string;
-    projectId: string;
-    sprintId: string;
-    userId: string;
-    name?: string;
-    goal?: string | null;
-    status?: SprintStatus;
-    startDate?: string | null;
-    endDate?: string | null;
+  workspaceId: string;
+  projectId: string;
+  sprintId: string;
+  userId: string;
+  name?: string;
+  goal?: string | null;
+  status?: SprintStatus;
+  startDate?: string | null;
+  endDate?: string | null;
 };
 
 export type UpdateSprintResult = {
-    id: string;
-    projectId: string;
-    createdBy: string;
-    name: string;
-    goal: string | null;
-    status: SprintStatus;
-    startDate: Date | null;
-    endDate: Date | null;
-    createdAt: Date;
-    updatedAt: Date;
+  id: string;
+  projectId: string;
+  createdBy: string;
+  name: string;
+  goal: string | null;
+  status: SprintStatus;
+  startDate: Date | null;
+  endDate: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 @Injectable()
 export class UpdateSprintService {
-    constructor(
-        @Inject(SPRINT_REPOSITORY)
-        private readonly sprintRepository: SprintRepositoryPort,
-        private readonly sprintPermissionService: SprintPermissionService,
-    ) { }
+  constructor(
+    @Inject(SPRINT_REPOSITORY)
+    private readonly sprintRepository: SprintRepositoryPort,
+    private readonly sprintPermissionService: SprintPermissionService,
+  ) {}
 
-    async execute(input: UpdateSprintInput): Promise<UpdateSprintResult> {
-        const workspaceId = WorkspaceId.create(input.workspaceId);
-        const projectId = ProjectId.create(input.projectId);
-        const sprintId = SprintId.create(input.sprintId);
-        const userId = UserId.create(input.userId);
+  async execute(input: UpdateSprintInput): Promise<UpdateSprintResult> {
+    const workspaceId = WorkspaceId.create(input.workspaceId);
+    const projectId = ProjectId.create(input.projectId);
+    const sprintId = SprintId.create(input.sprintId);
+    const userId = UserId.create(input.userId);
 
-        const name =
-            input.name !== undefined ? SprintName.create(input.name) : undefined;
+    const name =
+      input.name !== undefined ? SprintName.create(input.name) : undefined;
 
-        const goal =
-            input.goal !== undefined ? SprintGoal.create(input.goal) : undefined;
+    const goal =
+      input.goal !== undefined ? SprintGoal.create(input.goal) : undefined;
 
-        const status =
-            input.status !== undefined
-                ? this.parseStatus(input.status)
-                : undefined;
+    const status =
+      input.status !== undefined ? this.parseStatus(input.status) : undefined;
 
-        const startDate =
-            input.startDate !== undefined
-                ? this.parseOptionalDate(input.startDate)
-                : undefined;
+    const startDate =
+      input.startDate !== undefined
+        ? this.parseOptionalDate(input.startDate)
+        : undefined;
 
-        const endDate =
-            input.endDate !== undefined
-                ? this.parseOptionalDate(input.endDate)
-                : undefined;
+    const endDate =
+      input.endDate !== undefined
+        ? this.parseOptionalDate(input.endDate)
+        : undefined;
 
-        const workspaceExists =
-            await this.sprintRepository.workspaceExists(workspaceId);
+    const workspaceExists =
+      await this.sprintRepository.workspaceExists(workspaceId);
 
-        if (!workspaceExists) {
-            throw new SprintWorkspaceNotFoundError();
-        }
-
-        const projectExists =
-            await this.sprintRepository.projectExistsInWorkspace(
-                workspaceId,
-                projectId,
-            );
-
-        if (!projectExists) {
-            throw new SprintProjectNotFoundError();
-        }
-
-        const canManageSprints =
-            await this.sprintPermissionService.canManageSprints({
-                workspaceId,
-                projectId,
-                userId,
-            });
-
-        if (!canManageSprints) {
-            throw new SprintProjectAccessDeniedError();
-        }
-
-        const sprint = await this.sprintRepository.findByProjectAndId(
-            projectId,
-            sprintId,
-        );
-
-        if (!sprint) {
-            throw new SprintNotFoundError();
-        }
-
-        sprint.updateDetails({
-            name,
-            goal,
-            startDate,
-            endDate,
-        });
-
-        if (status !== undefined) {
-            sprint.changeStatus(status);
-        }
-
-        const savedSprint = await this.sprintRepository.save(sprint);
-
-        return this.toResult(savedSprint);
+    if (!workspaceExists) {
+      throw new SprintWorkspaceNotFoundError();
     }
 
-    private parseOptionalDate(value?: string | null): Date | null {
-        if (value === undefined || value === null) {
-            return null;
-        }
+    const projectExists = await this.sprintRepository.projectExistsInWorkspace(
+      workspaceId,
+      projectId,
+    );
 
-        const normalizedValue = value.trim();
-
-        if (normalizedValue.length === 0) {
-            return null;
-        }
-
-        const date = new Date(normalizedValue);
-
-        if (Number.isNaN(date.getTime())) {
-            throw new InvalidSprintDateRangeError();
-        }
-
-        return date;
+    if (!projectExists) {
+      throw new SprintProjectNotFoundError();
     }
 
-    private parseStatus(status: SprintStatus): SprintStatus {
-        if (!SprintStatuses.includes(status)) {
-            throw new InvalidSprintStatusError();
-        }
+    const canManageSprints =
+      await this.sprintPermissionService.canManageSprints({
+        workspaceId,
+        projectId,
+        userId,
+      });
 
-        return status;
+    if (!canManageSprints) {
+      throw new SprintProjectAccessDeniedError();
     }
 
-    private toResult(sprint: SprintEntity): UpdateSprintResult {
-        return {
-            id: sprint.getId(),
-            projectId: sprint.getProjectId(),
-            createdBy: sprint.getCreatedBy(),
-            name: sprint.getName(),
-            goal: sprint.getGoal(),
-            status: sprint.getStatus(),
-            startDate: sprint.getStartDate(),
-            endDate: sprint.getEndDate(),
-            createdAt: sprint.getCreatedAt(),
-            updatedAt: sprint.getUpdatedAt(),
-        };
+    const sprint = await this.sprintRepository.findByProjectAndId(
+      projectId,
+      sprintId,
+    );
+
+    if (!sprint) {
+      throw new SprintNotFoundError();
     }
+
+    sprint.updateDetails({
+      name,
+      goal,
+      startDate,
+      endDate,
+    });
+
+    if (status !== undefined) {
+      sprint.changeStatus(status);
+    }
+
+    const savedSprint = await this.sprintRepository.save(sprint);
+
+    return this.toResult(savedSprint);
+  }
+
+  private parseOptionalDate(value?: string | null): Date | null {
+    if (value === undefined || value === null) {
+      return null;
+    }
+
+    const normalizedValue = value.trim();
+
+    if (normalizedValue.length === 0) {
+      return null;
+    }
+
+    const date = new Date(normalizedValue);
+
+    if (Number.isNaN(date.getTime())) {
+      throw new InvalidSprintDateRangeError();
+    }
+
+    return date;
+  }
+
+  private parseStatus(status: SprintStatus): SprintStatus {
+    if (!SprintStatuses.includes(status)) {
+      throw new InvalidSprintStatusError();
+    }
+
+    return status;
+  }
+
+  private toResult(sprint: SprintEntity): UpdateSprintResult {
+    return {
+      id: sprint.getId(),
+      projectId: sprint.getProjectId(),
+      createdBy: sprint.getCreatedBy(),
+      name: sprint.getName(),
+      goal: sprint.getGoal(),
+      status: sprint.getStatus(),
+      startDate: sprint.getStartDate(),
+      endDate: sprint.getEndDate(),
+      createdAt: sprint.getCreatedAt(),
+      updatedAt: sprint.getUpdatedAt(),
+    };
+  }
 }

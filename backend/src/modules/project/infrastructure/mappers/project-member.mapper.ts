@@ -10,33 +10,33 @@ import { RoleId } from '../../domain/value-objects/role-id.vo';
 import { UserId } from '../../domain/value-objects/user-id.vo';
 
 export class ProjectMemberMapper {
-    static toDomain(member: PrismaProjectMember): ProjectMemberEntity {
-        return ProjectMemberEntity.restore({
-            id: ProjectMemberId.create(member.id),
-            projectId: ProjectId.create(member.projectId),
-            userId: UserId.create(member.userId),
-            roleId: RoleId.create(member.roleId),
-            joinedAt: member.joinedAt,
-        });
-    }
+  static toDomain(member: PrismaProjectMember): ProjectMemberEntity {
+    return ProjectMemberEntity.restore({
+      id: ProjectMemberId.create(member.id),
+      projectId: ProjectId.create(member.projectId),
+      userId: UserId.create(member.userId),
+      roleId: RoleId.create(member.roleId),
+      joinedAt: member.joinedAt,
+    });
+  }
 
-    static toPrismaCreate(
-        member: ProjectMemberEntity,
-    ): Prisma.ProjectMemberUncheckedCreateInput {
-        return {
-            id: member.getId(),
-            projectId: member.getProjectId(),
-            userId: member.getUserId(),
-            roleId: member.getRoleId(),
-            joinedAt: member.getJoinedAt(),
-        };
-    }
+  static toPrismaCreate(
+    member: ProjectMemberEntity,
+  ): Prisma.ProjectMemberUncheckedCreateInput {
+    return {
+      id: member.getId(),
+      projectId: member.getProjectId(),
+      userId: member.getUserId(),
+      roleId: member.getRoleId(),
+      joinedAt: member.getJoinedAt(),
+    };
+  }
 
-    static toPrismaUpdate(
-        member: ProjectMemberEntity,
-    ): Prisma.ProjectMemberUncheckedUpdateInput {
-        return {
-            roleId: member.getRoleId(),
-        };
-    }
+  static toPrismaUpdate(
+    member: ProjectMemberEntity,
+  ): Prisma.ProjectMemberUncheckedUpdateInput {
+    return {
+      roleId: member.getRoleId(),
+    };
+  }
 }

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 
+import { AccessControlModule } from '../access-control/access-control.module';
 import { IdentityModule } from '../identity/identity.module';
-
 import { PrismaModule } from '../../shared/infrastructure/database/prisma.module';
 
 import { CreateWorklogService } from './application/services/worklogs/create-worklog.service';
@@ -18,20 +18,20 @@ import { PrismaWorklogRepository } from './infrastructure/database/prisma-worklo
 import { WorklogController } from './presentation/controllers/worklog.controller';
 
 @Module({
-    imports: [PrismaModule, IdentityModule],
-    controllers: [WorklogController],
-    providers: [
-        WorklogPermissionService,
+  imports: [PrismaModule, IdentityModule, AccessControlModule],
+  controllers: [WorklogController],
+  providers: [
+    WorklogPermissionService,
 
-        GetTaskWorklogsService,
-        CreateWorklogService,
-        GetWorklogByIdService,
-        UpdateWorklogService,
-        DeleteWorklogService,
-        {
-            provide: WORKLOG_REPOSITORY,
-            useClass: PrismaWorklogRepository,
-        },
-    ],
+    GetTaskWorklogsService,
+    CreateWorklogService,
+    GetWorklogByIdService,
+    UpdateWorklogService,
+    DeleteWorklogService,
+    {
+      provide: WORKLOG_REPOSITORY,
+      useClass: PrismaWorklogRepository,
+    },
+  ],
 })
-export class WorklogModule { }
+export class WorklogModule {}

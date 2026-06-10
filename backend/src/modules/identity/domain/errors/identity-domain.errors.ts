@@ -1,4 +1,3 @@
-
 import {
   DomainError,
   DomainErrorType,

@@ -1,124 +1,78 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import { WORKLOG_REPOSITORY } from '../../../domain/ports/worklog.repository.port';
-import type { WorklogRepositoryPort } from '../../../domain/ports/worklog.repository.port';
+import { AccessControlService } from '../../../../access-control/application/services/access-control.service';
 
 import { ProjectId } from '../../../domain/value-objects/project-id.vo';
 import { UserId } from '../../../domain/value-objects/user-id.vo';
 import { WorkspaceId } from '../../../domain/value-objects/workspace-id.vo';
 
 type CanCreateWorklogInput = {
-    workspaceId: WorkspaceId;
-    projectId: ProjectId;
-    userId: UserId;
+  workspaceId: WorkspaceId;
+  projectId: ProjectId;
+  userId: UserId;
 };
 
 type CanViewTaskWorklogsInput = {
-    workspaceId: WorkspaceId;
-    projectId: ProjectId;
-    userId: UserId;
+  workspaceId: WorkspaceId;
+  projectId: ProjectId;
+  userId: UserId;
 };
 
 type CanUpdateWorklogInput = {
-    workspaceId: WorkspaceId;
-    projectId: ProjectId;
-    userId: UserId;
-    worklogUserId: UserId;
+  workspaceId: WorkspaceId;
+  projectId: ProjectId;
+  userId: UserId;
+  worklogUserId: UserId;
 };
 
 type CanDeleteWorklogInput = {
-    workspaceId: WorkspaceId;
-    projectId: ProjectId;
-    userId: UserId;
-    worklogUserId: UserId;
+  workspaceId: WorkspaceId;
+  projectId: ProjectId;
+  userId: UserId;
+  worklogUserId: UserId;
 };
-
-
 
 @Injectable()
 export class WorklogPermissionService {
-    constructor(
-        @Inject(WORKLOG_REPOSITORY)
-        private readonly worklogRepository: WorklogRepositoryPort,
-    ) { }
+  constructor(private readonly accessControlService: AccessControlService) {}
 
-    async canCreateWorklog(input: CanCreateWorklogInput): Promise<boolean> {
-        const isWorkspaceOwner = await this.worklogRepository.isWorkspaceOwner(
-            input.workspaceId,
-            input.userId,
-        );
+  async canCreateWorklog(input: CanCreateWorklogInput): Promise<boolean> {
+    return this.accessControlService.canAccessProject({
+      workspaceId: input.workspaceId.value,
+      projectId: input.projectId.value,
+      userId: input.userId.value,
+    });
+  }
 
-        if (isWorkspaceOwner) {
-            return true;
-        }
+  async canViewTaskWorklogs(input: CanViewTaskWorklogsInput): Promise<boolean> {
+    return this.accessControlService.canAccessProject({
+      workspaceId: input.workspaceId.value,
+      projectId: input.projectId.value,
+      userId: input.userId.value,
+    });
+  }
 
-        return this.worklogRepository.isProjectMember(
-            input.projectId,
-            input.userId,
-        );
+  async canUpdateWorklog(input: CanUpdateWorklogInput): Promise<boolean> {
+    if (input.userId.equals(input.worklogUserId)) {
+      return true;
     }
 
-    async canViewTaskWorklogs(
-        input: CanViewTaskWorklogsInput,
-    ): Promise<boolean> {
-        const isWorkspaceOwner = await this.worklogRepository.isWorkspaceOwner(
-            input.workspaceId,
-            input.userId,
-        );
+    return this.accessControlService.canManageProject({
+      workspaceId: input.workspaceId.value,
+      projectId: input.projectId.value,
+      userId: input.userId.value,
+    });
+  }
 
-        if (isWorkspaceOwner) {
-            return true;
-        }
-
-        return this.worklogRepository.isProjectMember(
-            input.projectId,
-            input.userId,
-        );
+  async canDeleteWorklog(input: CanDeleteWorklogInput): Promise<boolean> {
+    if (input.userId.equals(input.worklogUserId)) {
+      return true;
     }
 
-    async canUpdateWorklog(input: CanUpdateWorklogInput): Promise<boolean> {
-        if (input.userId.equals(input.worklogUserId)) {
-            return true;
-        }
-
-        const isWorkspaceOwner = await this.worklogRepository.isWorkspaceOwner(
-            input.workspaceId,
-            input.userId,
-        );
-
-        if (isWorkspaceOwner) {
-            return true;
-        }
-
-        const projectMember =
-            await this.worklogRepository.findProjectMemberByProjectAndUser(
-                input.projectId,
-                input.userId,
-            );
-
-        return projectMember?.role.name === 'ADMIN';
-    }
-
-    async canDeleteWorklog(input: CanDeleteWorklogInput): Promise<boolean> {
-        if (input.userId.equals(input.worklogUserId)) {
-            return true;
-        }
-
-        const isWorkspaceOwner = await this.worklogRepository.isWorkspaceOwner(
-            input.workspaceId,
-            input.userId,
-        );
-
-        if (isWorkspaceOwner) {
-            return true;
-        }
-
-        const projectMember =
-            await this.worklogRepository.findProjectMemberByProjectAndUser(
-                input.projectId,
-                input.userId,
-            );
-
-        return projectMember?.role.name === 'ADMIN';
-    }
+    return this.accessControlService.canManageProject({
+      workspaceId: input.workspaceId.value,
+      projectId: input.projectId.value,
+      userId: input.userId.value,
+    });
+  }
 }

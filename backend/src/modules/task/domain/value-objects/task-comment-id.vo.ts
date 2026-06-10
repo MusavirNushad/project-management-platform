@@ -1,30 +1,30 @@
 import { InvalidTaskCommentIdError } from '../errors/task-domain.errors';
 
 export class TaskCommentId {
-    private constructor(private readonly props: { value: string }) { }
+  private constructor(private readonly props: { value: string }) {}
 
-    static create(value: string): TaskCommentId {
-        const normalizedValue = value.trim();
+  static create(value: string): TaskCommentId {
+    const normalizedValue = value.trim();
 
-        if (!this.isValidUuid(normalizedValue)) {
-            throw new InvalidTaskCommentIdError();
-        }
-
-        return new TaskCommentId({ value: normalizedValue });
+    if (!this.isValidUuid(normalizedValue)) {
+      throw new InvalidTaskCommentIdError();
     }
 
-    get value(): string {
-        return this.props.value;
-    }
+    return new TaskCommentId({ value: normalizedValue });
+  }
 
-    equals(other: TaskCommentId): boolean {
-        return this.value === other.value;
-    }
+  get value(): string {
+    return this.props.value;
+  }
 
-    private static isValidUuid(value: string): boolean {
-        const uuidRegex =
-            /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  equals(other: TaskCommentId): boolean {
+    return this.value === other.value;
+  }
 
-        return uuidRegex.test(value);
-    }
+  private static isValidUuid(value: string): boolean {
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+    return uuidRegex.test(value);
+  }
 }

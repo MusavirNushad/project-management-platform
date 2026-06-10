@@ -15,52 +15,50 @@ import { UserResponseDto } from '../dtos/responses/user.response.dto';
 
 @Controller('users')
 export class UserController {
-    constructor(
-        private readonly getCurrentUserService: GetCurrentUserService,
-        private readonly updateUserProfileService: UpdateUserProfileService,
-        private readonly changePasswordService: ChangePasswordService,
-    ) { }
+  constructor(
+    private readonly getCurrentUserService: GetCurrentUserService,
+    private readonly updateUserProfileService: UpdateUserProfileService,
+    private readonly changePasswordService: ChangePasswordService,
+  ) {}
 
-    @UseGuards(JwtAuthGuard)
-    @Get('me')
-    async getMe(
-        @CurrentUser('userId') userId: string,
-    ): Promise<UserResponseDto> {
-        const result = await this.getCurrentUserService.execute({
-            userId,
-        });
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  async getMe(@CurrentUser('userId') userId: string): Promise<UserResponseDto> {
+    const result = await this.getCurrentUserService.execute({
+      userId,
+    });
 
-        return UserResponseDto.fromResult(result);
-    }
+    return UserResponseDto.fromResult(result);
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @Patch('me/profile')
-    async updateMyProfile(
-        @CurrentUser('userId') userId: string,
-        @Body() dto: UpdateUserProfileRequestDto,
-    ): Promise<UserResponseDto> {
-        const result = await this.updateUserProfileService.execute({
-            userId,
-            phoneNumber: dto.phoneNumber,
-            designation: dto.designation,
-            address: dto.address,
-        });
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/profile')
+  async updateMyProfile(
+    @CurrentUser('userId') userId: string,
+    @Body() dto: UpdateUserProfileRequestDto,
+  ): Promise<UserResponseDto> {
+    const result = await this.updateUserProfileService.execute({
+      userId,
+      phoneNumber: dto.phoneNumber,
+      designation: dto.designation,
+      address: dto.address,
+    });
 
-        return UserResponseDto.fromResult(result);
-    }
+    return UserResponseDto.fromResult(result);
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @Patch('me/password')
-    async changeMyPassword(
-        @CurrentUser('userId') userId: string,
-        @Body() dto: ChangePasswordRequestDto,
-    ): Promise<ChangePasswordResponseDto> {
-        const result = await this.changePasswordService.execute({
-            userId,
-            currentPassword: dto.currentPassword,
-            newPassword: dto.newPassword,
-        });
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/password')
+  async changeMyPassword(
+    @CurrentUser('userId') userId: string,
+    @Body() dto: ChangePasswordRequestDto,
+  ): Promise<ChangePasswordResponseDto> {
+    const result = await this.changePasswordService.execute({
+      userId,
+      currentPassword: dto.currentPassword,
+      newPassword: dto.newPassword,
+    });
 
-        return ChangePasswordResponseDto.fromResult(result);
-    }
+    return ChangePasswordResponseDto.fromResult(result);
+  }
 }

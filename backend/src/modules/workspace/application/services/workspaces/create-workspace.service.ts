@@ -6,8 +6,8 @@ import type { WorkspaceRepositoryPort } from '../../../domain/ports/workspace.re
 
 import { WorkspaceEntity } from '../../../domain/entities/workspace.entity';
 import {
-    WorkspaceAlreadyExistsError,
-    WorkspaceOwnerRoleNotFoundError,
+  WorkspaceAlreadyExistsError,
+  WorkspaceOwnerRoleNotFoundError,
 } from '../../../domain/errors/workspace-domain.errors';
 
 import { UserId } from '../../../domain/value-objects/user-id.vo';
@@ -21,85 +21,85 @@ const OwnerRoleName = 'OWNER' as const;
 const MaxSlugGenerationAttempts = 10;
 
 export type CreateWorkspaceInput = {
-    ownerId: string;
-    name: string;
-    description?: string | null;
+  ownerId: string;
+  name: string;
+  description?: string | null;
 };
 
 export type CreateWorkspaceResult = {
-    id: string;
-    ownerId: string;
-    name: string;
-    slug: string;
-    description: string | null;
-    createdAt: Date;
-    updatedAt: Date;
+  id: string;
+  ownerId: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 @Injectable()
 export class CreateWorkspaceService {
-    constructor(
-        @Inject(WORKSPACE_REPOSITORY)
-        private readonly workspaceRepository: WorkspaceRepositoryPort,
-    ) { }
+  constructor(
+    @Inject(WORKSPACE_REPOSITORY)
+    private readonly workspaceRepository: WorkspaceRepositoryPort,
+  ) {}
 
-    async execute(input: CreateWorkspaceInput): Promise<CreateWorkspaceResult> {
-        const ownerId = UserId.create(input.ownerId);
-        const name = WorkspaceName.create(input.name);
-        const description = WorkspaceDescription.create(input.description);
+  async execute(input: CreateWorkspaceInput): Promise<CreateWorkspaceResult> {
+    const ownerId = UserId.create(input.ownerId);
+    const name = WorkspaceName.create(input.name);
+    const description = WorkspaceDescription.create(input.description);
 
-        const ownerRoleId =
-            await this.workspaceRepository.findRoleIdByName(OwnerRoleName);
+    const ownerRoleId =
+      await this.workspaceRepository.findRoleIdByName(OwnerRoleName);
 
-        if (!ownerRoleId) {
-            throw new WorkspaceOwnerRoleNotFoundError();
-        }
-
-        const slug = await this.generateUniqueSlug(name.value);
-
-        const workspace = WorkspaceEntity.create({
-            id: WorkspaceId.create(randomUUID()),
-            ownerId,
-            name,
-            slug,
-            description,
-            ownerMemberId: WorkspaceMemberId.create(randomUUID()),
-            ownerRoleId,
-        });
-
-        const savedWorkspace = await this.workspaceRepository.save(workspace);
-
-        return this.toResult(savedWorkspace);
+    if (!ownerRoleId) {
+      throw new WorkspaceOwnerRoleNotFoundError();
     }
 
-    private async generateUniqueSlug(name: string): Promise<WorkspaceSlug> {
-        const baseSlug = WorkspaceSlug.fromName(name);
+    const slug = await this.generateUniqueSlug(name.value);
 
-        for (let attempt = 1; attempt <= MaxSlugGenerationAttempts; attempt++) {
-            const slug =
-                attempt === 1
-                    ? baseSlug
-                    : WorkspaceSlug.create(`${baseSlug.value}-${attempt}`);
+    const workspace = WorkspaceEntity.create({
+      id: WorkspaceId.create(randomUUID()),
+      ownerId,
+      name,
+      slug,
+      description,
+      ownerMemberId: WorkspaceMemberId.create(randomUUID()),
+      ownerRoleId,
+    });
 
-            const exists = await this.workspaceRepository.existsBySlug(slug);
+    const savedWorkspace = await this.workspaceRepository.save(workspace);
 
-            if (!exists) {
-                return slug;
-            }
-        }
+    return this.toResult(savedWorkspace);
+  }
 
-        throw new WorkspaceAlreadyExistsError();
+  private async generateUniqueSlug(name: string): Promise<WorkspaceSlug> {
+    const baseSlug = WorkspaceSlug.fromName(name);
+
+    for (let attempt = 1; attempt <= MaxSlugGenerationAttempts; attempt++) {
+      const slug =
+        attempt === 1
+          ? baseSlug
+          : WorkspaceSlug.create(`${baseSlug.value}-${attempt}`);
+
+      const exists = await this.workspaceRepository.existsBySlug(slug);
+
+      if (!exists) {
+        return slug;
+      }
     }
 
-    private toResult(workspace: WorkspaceEntity): CreateWorkspaceResult {
-        return {
-            id: workspace.getId(),
-            ownerId: workspace.getOwnerId(),
-            name: workspace.getName(),
-            slug: workspace.getSlug(),
-            description: workspace.getDescription(),
-            createdAt: workspace.getCreatedAt(),
-            updatedAt: workspace.getUpdatedAt(),
-        };
-    }
+    throw new WorkspaceAlreadyExistsError();
+  }
+
+  private toResult(workspace: WorkspaceEntity): CreateWorkspaceResult {
+    return {
+      id: workspace.getId(),
+      ownerId: workspace.getOwnerId(),
+      name: workspace.getName(),
+      slug: workspace.getSlug(),
+      description: workspace.getDescription(),
+      createdAt: workspace.getCreatedAt(),
+      updatedAt: workspace.getUpdatedAt(),
+    };
+  }
 }

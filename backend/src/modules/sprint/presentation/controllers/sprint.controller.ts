@@ -1,11 +1,11 @@
 import {
-    Body,
-    Controller,
-    Get,
-    Param,
-    Patch,
-    Post,
-    UseGuards,
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
 } from '@nestjs/common';
 
 import { CreateSprintService } from '../../application/services/sprints/create-sprint.service';
@@ -24,90 +24,89 @@ import { SprintResponseDto } from '../dtos/responses/sprint.response.dto';
 
 @Controller('workspaces/:workspaceId/projects/:projectId/sprints')
 export class SprintController {
-    constructor(
-        private readonly createSprintService: CreateSprintService,
-        private readonly getProjectSprintsService: GetProjectSprintsService,
-        private readonly getSprintByIdService: GetSprintByIdService,
-        private readonly updateSprintService: UpdateSprintService,
-    ) { }
+  constructor(
+    private readonly createSprintService: CreateSprintService,
+    private readonly getProjectSprintsService: GetProjectSprintsService,
+    private readonly getSprintByIdService: GetSprintByIdService,
+    private readonly updateSprintService: UpdateSprintService,
+  ) {}
 
-    @UseGuards(JwtAuthGuard)
-    @Post()
-    async createSprint(
-        @CurrentUser('userId') userId: string,
-        @Param('workspaceId') workspaceId: string,
-        @Param('projectId') projectId: string,
-        @Body() dto: CreateSprintRequestDto,
-    ): Promise<SprintResponseDto> {
+  @UseGuards(JwtAuthGuard)
+  @Post()
+  async createSprint(
+    @CurrentUser('userId') userId: string,
+    @Param('workspaceId') workspaceId: string,
+    @Param('projectId') projectId: string,
+    @Body() dto: CreateSprintRequestDto,
+  ): Promise<SprintResponseDto> {
+    const result = await this.createSprintService.execute({
+      workspaceId,
+      projectId,
+      createdBy: userId,
+      name: dto.name,
+      goal: dto.goal,
+      startDate: dto.startDate,
+      endDate: dto.endDate,
+    });
 
-        const result = await this.createSprintService.execute({
-            workspaceId,
-            projectId,
-            createdBy: userId,
-            name: dto.name,
-            goal: dto.goal,
-            startDate: dto.startDate,
-            endDate: dto.endDate,
-        });
+    return SprintResponseDto.fromResult(result);
+  }
 
-        return SprintResponseDto.fromResult(result);
-    }
+  @UseGuards(JwtAuthGuard)
+  @Get()
+  async getProjectSprints(
+    @CurrentUser('userId') userId: string,
+    @Param('workspaceId') workspaceId: string,
+    @Param('projectId') projectId: string,
+  ): Promise<SprintListResponseDto> {
+    const result = await this.getProjectSprintsService.execute({
+      workspaceId,
+      projectId,
+      userId,
+    });
 
-    @UseGuards(JwtAuthGuard)
-    @Get()
-    async getProjectSprints(
-        @CurrentUser('userId') userId: string,
-        @Param('workspaceId') workspaceId: string,
-        @Param('projectId') projectId: string,
-    ): Promise<SprintListResponseDto> {
-        const result = await this.getProjectSprintsService.execute({
-            workspaceId,
-            projectId,
-            userId,
-        });
+    return SprintListResponseDto.fromResult(result);
+  }
 
-        return SprintListResponseDto.fromResult(result);
-    }
+  @UseGuards(JwtAuthGuard)
+  @Get(':sprintId')
+  async getSprintById(
+    @CurrentUser('userId') userId: string,
+    @Param('workspaceId') workspaceId: string,
+    @Param('projectId') projectId: string,
+    @Param('sprintId') sprintId: string,
+  ): Promise<SprintResponseDto> {
+    const result = await this.getSprintByIdService.execute({
+      workspaceId,
+      projectId,
+      sprintId,
+      userId,
+    });
 
-    @UseGuards(JwtAuthGuard)
-    @Get(':sprintId')
-    async getSprintById(
-        @CurrentUser('userId') userId: string,
-        @Param('workspaceId') workspaceId: string,
-        @Param('projectId') projectId: string,
-        @Param('sprintId') sprintId: string,
-    ): Promise<SprintResponseDto> {
-        const result = await this.getSprintByIdService.execute({
-            workspaceId,
-            projectId,
-            sprintId,
-            userId,
-        });
+    return SprintResponseDto.fromResult(result);
+  }
 
-        return SprintResponseDto.fromResult(result);
-    }
+  @UseGuards(JwtAuthGuard)
+  @Patch(':sprintId')
+  async updateSprint(
+    @CurrentUser('userId') userId: string,
+    @Param('workspaceId') workspaceId: string,
+    @Param('projectId') projectId: string,
+    @Param('sprintId') sprintId: string,
+    @Body() dto: UpdateSprintRequestDto,
+  ): Promise<SprintResponseDto> {
+    const result = await this.updateSprintService.execute({
+      workspaceId,
+      projectId,
+      sprintId,
+      userId,
+      name: dto.name,
+      goal: dto.goal,
+      status: dto.status,
+      startDate: dto.startDate,
+      endDate: dto.endDate,
+    });
 
-    @UseGuards(JwtAuthGuard)
-    @Patch(':sprintId')
-    async updateSprint(
-        @CurrentUser('userId') userId: string,
-        @Param('workspaceId') workspaceId: string,
-        @Param('projectId') projectId: string,
-        @Param('sprintId') sprintId: string,
-        @Body() dto: UpdateSprintRequestDto,
-    ): Promise<SprintResponseDto> {
-        const result = await this.updateSprintService.execute({
-            workspaceId,
-            projectId,
-            sprintId,
-            userId,
-            name: dto.name,
-            goal: dto.goal,
-            status: dto.status,
-            startDate: dto.startDate,
-            endDate: dto.endDate,
-        });
-
-        return SprintResponseDto.fromResult(result);
-    }
+    return SprintResponseDto.fromResult(result);
+  }
 }

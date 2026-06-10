@@ -13,7 +13,6 @@ import { BcryptPasswordHasher } from './infrastructure/security/bcrypt-password-
 import { JwtTokenService } from './infrastructure/security/jwt-token.service';
 import { JwtAuthGuard } from './infrastructure/security/jwt-auth.guard';
 
-
 import { RegisterUserService } from './application/services/auth/register-user.service';
 import { LoginUserService } from './application/services/auth/login-user.service';
 import { LogoutUserService } from './application/services/auth/logout-user.service';
@@ -24,43 +23,32 @@ import { ChangePasswordService } from './application/services/users/change-passw
 import { AuthController } from './presentation/controllers/auth.controller';
 import { UserController } from './presentation/controllers/user.controller';
 
-
 @Module({
-    imports: [
-        ConfigModule,
-        JwtModule.register({}),
-        PrismaModule,
-    ],
-    controllers: [
-        AuthController,
-        UserController,
-    ],
-    providers: [
-        RegisterUserService,
-        RefreshTokenService,
-        LoginUserService,
-        LogoutUserService,
-        GetCurrentUserService,
-        UpdateUserProfileService,
-        ChangePasswordService,
-        JwtAuthGuard,
+  imports: [ConfigModule, JwtModule.register({}), PrismaModule],
+  controllers: [AuthController, UserController],
+  providers: [
+    RegisterUserService,
+    RefreshTokenService,
+    LoginUserService,
+    LogoutUserService,
+    GetCurrentUserService,
+    UpdateUserProfileService,
+    ChangePasswordService,
+    JwtAuthGuard,
 
-        {
-            provide: USER_REPOSITORY,
-            useClass: PrismaUserRepository,
-        },
-        {
-            provide: PASSWORD_HASHER,
-            useClass: BcryptPasswordHasher,
-        },
-        {
-            provide: TOKEN_SERVICE,
-            useClass: JwtTokenService,
-        },
-    ],
-    exports: [
-        JwtAuthGuard,
-        TOKEN_SERVICE,
-    ],
+    {
+      provide: USER_REPOSITORY,
+      useClass: PrismaUserRepository,
+    },
+    {
+      provide: PASSWORD_HASHER,
+      useClass: BcryptPasswordHasher,
+    },
+    {
+      provide: TOKEN_SERVICE,
+      useClass: JwtTokenService,
+    },
+  ],
+  exports: [JwtAuthGuard, TOKEN_SERVICE],
 })
-export class IdentityModule { }
+export class IdentityModule {}

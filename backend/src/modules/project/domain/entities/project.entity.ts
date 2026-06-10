@@ -3,10 +3,10 @@
 import { ProjectMemberEntity } from './project-member.entity';
 
 import {
-    InvalidProjectDateRangeError,
-    InvalidProjectStatusError,
-    ProjectMemberAlreadyExistsError,
-    ProjectMemberProjectMismatchError,
+  InvalidProjectDateRangeError,
+  InvalidProjectStatusError,
+  ProjectMemberAlreadyExistsError,
+  ProjectMemberProjectMismatchError,
 } from '../errors/project-domain.errors';
 
 import { ProjectDescription } from '../value-objects/project-description.vo';
@@ -20,237 +20,237 @@ import { WorkspaceId } from '../value-objects/workspace-id.vo';
 export type ProjectStatus = 'ACTIVE' | 'COMPLETED' | 'ARCHIVED' | 'CANCELLED';
 
 const ProjectStatuses: ProjectStatus[] = [
-    'ACTIVE',
-    'COMPLETED',
-    'ARCHIVED',
-    'CANCELLED',
+  'ACTIVE',
+  'COMPLETED',
+  'ARCHIVED',
+  'CANCELLED',
 ];
 
 type ProjectEntityProps = {
-    id: ProjectId;
-    workspaceId: WorkspaceId;
-    createdBy: UserId;
-    title: ProjectTitle;
-    status: ProjectStatus;
-    description: ProjectDescription;
-    startDate: Date | null;
-    dueDate: Date | null;
-    members: ProjectMemberEntity[];
-    createdAt: Date;
-    updatedAt: Date;
+  id: ProjectId;
+  workspaceId: WorkspaceId;
+  createdBy: UserId;
+  title: ProjectTitle;
+  status: ProjectStatus;
+  description: ProjectDescription;
+  startDate: Date | null;
+  dueDate: Date | null;
+  members: ProjectMemberEntity[];
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 type CreateProjectProps = {
-    id: ProjectId;
-    workspaceId: WorkspaceId;
-    createdBy: UserId;
-    title: ProjectTitle;
-    description: ProjectDescription;
-    creatorMemberId: ProjectMemberId;
-    creatorRoleId: RoleId;
-    startDate?: Date | null;
-    dueDate?: Date | null;
-    createdAt?: Date;
-    updatedAt?: Date;
+  id: ProjectId;
+  workspaceId: WorkspaceId;
+  createdBy: UserId;
+  title: ProjectTitle;
+  description: ProjectDescription;
+  creatorMemberId: ProjectMemberId;
+  creatorRoleId: RoleId;
+  startDate?: Date | null;
+  dueDate?: Date | null;
+  createdAt?: Date;
+  updatedAt?: Date;
 };
 
 type RestoreProjectProps = {
-    id: ProjectId;
-    workspaceId: WorkspaceId;
-    createdBy: UserId;
-    title: ProjectTitle;
-    status: ProjectStatus;
-    description: ProjectDescription;
-    startDate: Date | null;
-    dueDate: Date | null;
-    members: ProjectMemberEntity[];
-    createdAt: Date;
-    updatedAt: Date;
+  id: ProjectId;
+  workspaceId: WorkspaceId;
+  createdBy: UserId;
+  title: ProjectTitle;
+  status: ProjectStatus;
+  description: ProjectDescription;
+  startDate: Date | null;
+  dueDate: Date | null;
+  members: ProjectMemberEntity[];
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 type UpdateProjectDetailsProps = {
-    title?: ProjectTitle;
-    description?: ProjectDescription;
-    startDate?: Date | null;
-    dueDate?: Date | null;
+  title?: ProjectTitle;
+  description?: ProjectDescription;
+  startDate?: Date | null;
+  dueDate?: Date | null;
 };
 
 export class ProjectEntity {
-    private constructor(private readonly props: ProjectEntityProps) { }
+  private constructor(private readonly props: ProjectEntityProps) {}
 
-    static create(props: CreateProjectProps): ProjectEntity {
-        const now = new Date();
+  static create(props: CreateProjectProps): ProjectEntity {
+    const now = new Date();
 
-        const createdAt = props.createdAt ?? now;
-        const updatedAt = props.updatedAt ?? now;
+    const createdAt = props.createdAt ?? now;
+    const updatedAt = props.updatedAt ?? now;
 
-        const startDate = props.startDate ?? null;
-        const dueDate = props.dueDate ?? null;
+    const startDate = props.startDate ?? null;
+    const dueDate = props.dueDate ?? null;
 
-        this.validateDateRange(startDate, dueDate);
+    this.validateDateRange(startDate, dueDate);
 
-        const creatorMember = ProjectMemberEntity.create({
-            id: props.creatorMemberId,
-            projectId: props.id,
-            userId: props.createdBy,
-            roleId: props.creatorRoleId,
-            joinedAt: createdAt,
-        });
+    const creatorMember = ProjectMemberEntity.create({
+      id: props.creatorMemberId,
+      projectId: props.id,
+      userId: props.createdBy,
+      roleId: props.creatorRoleId,
+      joinedAt: createdAt,
+    });
 
-        return new ProjectEntity({
-            id: props.id,
-            workspaceId: props.workspaceId,
-            createdBy: props.createdBy,
-            title: props.title,
-            status: 'ACTIVE',
-            description: props.description,
-            startDate,
-            dueDate,
-            members: [creatorMember],
-            createdAt,
-            updatedAt,
-        });
+    return new ProjectEntity({
+      id: props.id,
+      workspaceId: props.workspaceId,
+      createdBy: props.createdBy,
+      title: props.title,
+      status: 'ACTIVE',
+      description: props.description,
+      startDate,
+      dueDate,
+      members: [creatorMember],
+      createdAt,
+      updatedAt,
+    });
+  }
+
+  static restore(props: RestoreProjectProps): ProjectEntity {
+    this.validateStatus(props.status);
+    this.validateDateRange(props.startDate, props.dueDate);
+
+    return new ProjectEntity({
+      id: props.id,
+      workspaceId: props.workspaceId,
+      createdBy: props.createdBy,
+      title: props.title,
+      status: props.status,
+      description: props.description,
+      startDate: props.startDate,
+      dueDate: props.dueDate,
+      members: props.members,
+      createdAt: props.createdAt,
+      updatedAt: props.updatedAt,
+    });
+  }
+
+  updateDetails(props: UpdateProjectDetailsProps): void {
+    const nextStartDate =
+      props.startDate !== undefined ? props.startDate : this.props.startDate;
+
+    const nextDueDate =
+      props.dueDate !== undefined ? props.dueDate : this.props.dueDate;
+
+    ProjectEntity.validateDateRange(nextStartDate, nextDueDate);
+
+    if (props.title) {
+      this.props.title = props.title;
     }
 
-    static restore(props: RestoreProjectProps): ProjectEntity {
-        this.validateStatus(props.status);
-        this.validateDateRange(props.startDate, props.dueDate);
-
-        return new ProjectEntity({
-            id: props.id,
-            workspaceId: props.workspaceId,
-            createdBy: props.createdBy,
-            title: props.title,
-            status: props.status,
-            description: props.description,
-            startDate: props.startDate,
-            dueDate: props.dueDate,
-            members: props.members,
-            createdAt: props.createdAt,
-            updatedAt: props.updatedAt,
-        });
+    if (props.description !== undefined) {
+      this.props.description = props.description;
     }
 
-    updateDetails(props: UpdateProjectDetailsProps): void {
-        const nextStartDate =
-            props.startDate !== undefined ? props.startDate : this.props.startDate;
-
-        const nextDueDate =
-            props.dueDate !== undefined ? props.dueDate : this.props.dueDate;
-
-        ProjectEntity.validateDateRange(nextStartDate, nextDueDate);
-
-        if (props.title) {
-            this.props.title = props.title;
-        }
-
-        if (props.description !== undefined) {
-            this.props.description = props.description;
-        }
-
-        if (props.startDate !== undefined) {
-            this.props.startDate = props.startDate;
-        }
-
-        if (props.dueDate !== undefined) {
-            this.props.dueDate = props.dueDate;
-        }
-
-        this.touch();
+    if (props.startDate !== undefined) {
+      this.props.startDate = props.startDate;
     }
 
-    changeStatus(status: ProjectStatus): void {
-        ProjectEntity.validateStatus(status);
-
-        this.props.status = status;
-        this.touch();
+    if (props.dueDate !== undefined) {
+      this.props.dueDate = props.dueDate;
     }
 
-    addMember(member: ProjectMemberEntity): void {
-        if (!member.belongsToProject(this.props.id)) {
-            throw new ProjectMemberProjectMismatchError();
-        }
+    this.touch();
+  }
 
-        if (this.hasMember(member.getUserIdValueObject())) {
-            throw new ProjectMemberAlreadyExistsError();
-        }
+  changeStatus(status: ProjectStatus): void {
+    ProjectEntity.validateStatus(status);
 
-        this.props.members.push(member);
-        this.touch();
+    this.props.status = status;
+    this.touch();
+  }
+
+  addMember(member: ProjectMemberEntity): void {
+    if (!member.belongsToProject(this.props.id)) {
+      throw new ProjectMemberProjectMismatchError();
     }
 
-    belongsToWorkspace(workspaceId: WorkspaceId): boolean {
-        return this.props.workspaceId.equals(workspaceId);
+    if (this.hasMember(member.getUserIdValueObject())) {
+      throw new ProjectMemberAlreadyExistsError();
     }
 
-    isCreatedBy(userId: UserId): boolean {
-        return this.props.createdBy.equals(userId);
-    }
+    this.props.members.push(member);
+    this.touch();
+  }
 
-    hasMember(userId: UserId): boolean {
-        return this.props.members.some((member) => member.belongsToUser(userId));
-    }
+  belongsToWorkspace(workspaceId: WorkspaceId): boolean {
+    return this.props.workspaceId.equals(workspaceId);
+  }
 
-    getId(): string {
-        return this.props.id.value;
-    }
+  isCreatedBy(userId: UserId): boolean {
+    return this.props.createdBy.equals(userId);
+  }
 
-    getWorkspaceId(): string {
-        return this.props.workspaceId.value;
-    }
+  hasMember(userId: UserId): boolean {
+    return this.props.members.some((member) => member.belongsToUser(userId));
+  }
 
-    getCreatedBy(): string {
-        return this.props.createdBy.value;
-    }
+  getId(): string {
+    return this.props.id.value;
+  }
 
-    getTitle(): string {
-        return this.props.title.value;
-    }
+  getWorkspaceId(): string {
+    return this.props.workspaceId.value;
+  }
 
-    getStatus(): ProjectStatus {
-        return this.props.status;
-    }
+  getCreatedBy(): string {
+    return this.props.createdBy.value;
+  }
 
-    getDescription(): string | null {
-        return this.props.description.value;
-    }
+  getTitle(): string {
+    return this.props.title.value;
+  }
 
-    getStartDate(): Date | null {
-        return this.props.startDate;
-    }
+  getStatus(): ProjectStatus {
+    return this.props.status;
+  }
 
-    getDueDate(): Date | null {
-        return this.props.dueDate;
-    }
+  getDescription(): string | null {
+    return this.props.description.value;
+  }
 
-    getMembers(): ProjectMemberEntity[] {
-        return [...this.props.members];
-    }
+  getStartDate(): Date | null {
+    return this.props.startDate;
+  }
 
-    getCreatedAt(): Date {
-        return this.props.createdAt;
-    }
+  getDueDate(): Date | null {
+    return this.props.dueDate;
+  }
 
-    getUpdatedAt(): Date {
-        return this.props.updatedAt;
-    }
+  getMembers(): ProjectMemberEntity[] {
+    return [...this.props.members];
+  }
 
-    private static validateDateRange(
-        startDate: Date | null,
-        dueDate: Date | null,
-    ): void {
-        if (startDate && dueDate && startDate > dueDate) {
-            throw new InvalidProjectDateRangeError();
-        }
-    }
+  getCreatedAt(): Date {
+    return this.props.createdAt;
+  }
 
-    private static validateStatus(status: ProjectStatus): void {
-        if (!ProjectStatuses.includes(status)) {
-            throw new InvalidProjectStatusError();
-        }
-    }
+  getUpdatedAt(): Date {
+    return this.props.updatedAt;
+  }
 
-    private touch(): void {
-        this.props.updatedAt = new Date();
+  private static validateDateRange(
+    startDate: Date | null,
+    dueDate: Date | null,
+  ): void {
+    if (startDate && dueDate && startDate > dueDate) {
+      throw new InvalidProjectDateRangeError();
     }
+  }
+
+  private static validateStatus(status: ProjectStatus): void {
+    if (!ProjectStatuses.includes(status)) {
+      throw new InvalidProjectStatusError();
+    }
+  }
+
+  private touch(): void {
+    this.props.updatedAt = new Date();
+  }
 }

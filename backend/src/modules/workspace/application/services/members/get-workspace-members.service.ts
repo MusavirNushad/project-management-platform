@@ -31,7 +31,7 @@ export class GetWorkspaceMembersService {
   constructor(
     @Inject(WORKSPACE_REPOSITORY)
     private readonly workspaceRepository: WorkspaceRepositoryPort,
-  ) { }
+  ) {}
 
   async execute(
     input: GetWorkspaceMembersInput,

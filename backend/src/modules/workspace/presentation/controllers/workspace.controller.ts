@@ -1,11 +1,11 @@
 import {
-    Body,
-    Controller,
-    Get,
-    Param,
-    Patch,
-    Post,
-    UseGuards,
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
 } from '@nestjs/common';
 
 import { CreateWorkspaceService } from '../../application/services/workspaces/create-workspace.service';
@@ -24,68 +24,68 @@ import { WorkspaceResponseDto } from '../dtos/responses/workspace.response.dto';
 
 @Controller('workspaces')
 export class WorkspaceController {
-    constructor(
-        private readonly createWorkspaceService: CreateWorkspaceService,
-        private readonly getMyWorkspacesService: GetMyWorkspacesService,
-        private readonly getWorkspaceByIdService: GetWorkspaceByIdService,
-        private readonly updateWorkspaceService: UpdateWorkspaceService,
-    ) { }
+  constructor(
+    private readonly createWorkspaceService: CreateWorkspaceService,
+    private readonly getMyWorkspacesService: GetMyWorkspacesService,
+    private readonly getWorkspaceByIdService: GetWorkspaceByIdService,
+    private readonly updateWorkspaceService: UpdateWorkspaceService,
+  ) {}
 
-    @UseGuards(JwtAuthGuard)
-    @Post()
-    async createWorkspace(
-        @CurrentUser('userId') userId: string,
-        @Body() dto: CreateWorkspaceRequestDto,
-    ): Promise<WorkspaceResponseDto> {
-        const result = await this.createWorkspaceService.execute({
-            ownerId: userId,
-            name: dto.name,
-            description: dto.description,
-        });
+  @UseGuards(JwtAuthGuard)
+  @Post()
+  async createWorkspace(
+    @CurrentUser('userId') userId: string,
+    @Body() dto: CreateWorkspaceRequestDto,
+  ): Promise<WorkspaceResponseDto> {
+    const result = await this.createWorkspaceService.execute({
+      ownerId: userId,
+      name: dto.name,
+      description: dto.description,
+    });
 
-        return WorkspaceResponseDto.fromResult(result);
-    }
+    return WorkspaceResponseDto.fromResult(result);
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @Get()
-    async getMyWorkspaces(
-        @CurrentUser('userId') userId: string,
-    ): Promise<WorkspaceListResponseDto> {
-        const result = await this.getMyWorkspacesService.execute({
-            userId,
-        });
+  @UseGuards(JwtAuthGuard)
+  @Get()
+  async getMyWorkspaces(
+    @CurrentUser('userId') userId: string,
+  ): Promise<WorkspaceListResponseDto> {
+    const result = await this.getMyWorkspacesService.execute({
+      userId,
+    });
 
-        return WorkspaceListResponseDto.fromResult(result);
-    }
+    return WorkspaceListResponseDto.fromResult(result);
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @Get(':id')
-    async getWorkspaceById(
-        @CurrentUser('userId') userId: string,
-        @Param('id') workspaceId: string,
-    ): Promise<WorkspaceResponseDto> {
-        const result = await this.getWorkspaceByIdService.execute({
-            workspaceId,
-            userId,
-        });
+  @UseGuards(JwtAuthGuard)
+  @Get(':id')
+  async getWorkspaceById(
+    @CurrentUser('userId') userId: string,
+    @Param('id') workspaceId: string,
+  ): Promise<WorkspaceResponseDto> {
+    const result = await this.getWorkspaceByIdService.execute({
+      workspaceId,
+      userId,
+    });
 
-        return WorkspaceResponseDto.fromResult(result);
-    }
+    return WorkspaceResponseDto.fromResult(result);
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @Patch(':id')
-    async updateWorkspace(
-        @CurrentUser('userId') userId: string,
-        @Param('id') workspaceId: string,
-        @Body() dto: UpdateWorkspaceRequestDto,
-    ): Promise<WorkspaceResponseDto> {
-        const result = await this.updateWorkspaceService.execute({
-            workspaceId,
-            userId,
-            name: dto.name,
-            description: dto.description,
-        });
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id')
+  async updateWorkspace(
+    @CurrentUser('userId') userId: string,
+    @Param('id') workspaceId: string,
+    @Body() dto: UpdateWorkspaceRequestDto,
+  ): Promise<WorkspaceResponseDto> {
+    const result = await this.updateWorkspaceService.execute({
+      workspaceId,
+      userId,
+      name: dto.name,
+      description: dto.description,
+    });
 
-        return WorkspaceResponseDto.fromResult(result);
-    }
+    return WorkspaceResponseDto.fromResult(result);
+  }
 }

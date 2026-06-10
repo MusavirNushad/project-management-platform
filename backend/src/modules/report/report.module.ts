@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { AccessControlModule } from '../access-control/access-control.module';
 import { IdentityModule } from '../identity/identity.module';
 
 import { PrismaModule } from '../../shared/infrastructure/database/prisma.module';
@@ -17,18 +18,18 @@ import { PrismaReportRepository } from './infrastructure/database/prisma-report.
 import { ReportController } from './presentation/controllers/report.controller';
 
 @Module({
-    imports: [PrismaModule, IdentityModule],
-    controllers: [ReportController],
-    providers: [
-        ReportPermissionService,
-        GenerateReportSummaryService,
-        CreateReportService,
-        GetProjectReportsService,
-        GetReportByIdService,
-        {
-            provide: REPORT_REPOSITORY,
-            useClass: PrismaReportRepository,
-        },
-    ],
+  imports: [PrismaModule, IdentityModule, AccessControlModule],
+  controllers: [ReportController],
+  providers: [
+    ReportPermissionService,
+    GenerateReportSummaryService,
+    CreateReportService,
+    GetProjectReportsService,
+    GetReportByIdService,
+    {
+      provide: REPORT_REPOSITORY,
+      useClass: PrismaReportRepository,
+    },
+  ],
 })
-export class ReportModule { }
+export class ReportModule {}

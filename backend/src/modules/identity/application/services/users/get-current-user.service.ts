@@ -10,65 +10,67 @@ import type { UserProfileEntity } from '../../../domain/entities/user-profile.en
 import { UserId } from '../../../domain/value-objects/user-id.vo';
 
 export type GetCurrentUserInput = {
-    userId: string;
+  userId: string;
 };
 
 export type GetCurrentUserResult = {
+  id: string;
+  name: string;
+  email: string;
+  isVerified: boolean;
+  profile: {
     id: string;
-    name: string;
-    email: string;
-    isVerified: boolean;
-    profile: {
-        id: string;
-        phoneNumber: string | null;
-        designation: string | null;
-        address: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-    } | null;
+    phoneNumber: string | null;
+    designation: string | null;
+    address: string | null;
     createdAt: Date;
     updatedAt: Date;
+  } | null;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 @Injectable()
 export class GetCurrentUserService {
-    constructor(
-        @Inject(USER_REPOSITORY)
-        private readonly userRepository: UserRepositoryPort,
-    ) { }
+  constructor(
+    @Inject(USER_REPOSITORY)
+    private readonly userRepository: UserRepositoryPort,
+  ) {}
 
-    async execute(input: GetCurrentUserInput): Promise<GetCurrentUserResult> {
-        const userId = UserId.create(input.userId);
+  async execute(input: GetCurrentUserInput): Promise<GetCurrentUserResult> {
+    const userId = UserId.create(input.userId);
 
-        const user = await this.userRepository.findById(userId);
+    const user = await this.userRepository.findById(userId);
 
-        if (!user) {
-            throw new UserNotFoundError();
-        }
-
-        return {
-            id: user.getId(),
-            name: user.getName(),
-            email: user.getEmail(),
-            isVerified: user.getIsVerified(),
-            profile: this.mapProfile(user.getProfile()),
-            createdAt: user.getCreatedAt(),
-            updatedAt: user.getUpdatedAt(),
-        };
+    if (!user) {
+      throw new UserNotFoundError();
     }
 
-    private mapProfile(profile: UserProfileEntity | null): GetCurrentUserResult['profile'] {
-        if (!profile) {
-            return null;
-        }
+    return {
+      id: user.getId(),
+      name: user.getName(),
+      email: user.getEmail(),
+      isVerified: user.getIsVerified(),
+      profile: this.mapProfile(user.getProfile()),
+      createdAt: user.getCreatedAt(),
+      updatedAt: user.getUpdatedAt(),
+    };
+  }
 
-        return {
-            id: profile.getId(),
-            phoneNumber: profile.getPhoneNumber(),
-            designation: profile.getDesignation(),
-            address: profile.getAddress(),
-            createdAt: profile.getCreatedAt(),
-            updatedAt: profile.getUpdatedAt(),
-        };
+  private mapProfile(
+    profile: UserProfileEntity | null,
+  ): GetCurrentUserResult['profile'] {
+    if (!profile) {
+      return null;
     }
+
+    return {
+      id: profile.getId(),
+      phoneNumber: profile.getPhoneNumber(),
+      designation: profile.getDesignation(),
+      address: profile.getAddress(),
+      createdAt: profile.getCreatedAt(),
+      updatedAt: profile.getUpdatedAt(),
+    };
+  }
 }

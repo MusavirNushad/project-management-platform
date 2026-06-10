@@ -1,11 +1,11 @@
 import {
-    Body,
-    Controller,
-    Get,
-    Param,
-    Patch,
-    Post,
-    UseGuards,
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
 } from '@nestjs/common';
 
 import { CreateTaskService } from '../../application/services/tasks/create-task.service';
@@ -23,72 +23,72 @@ import { TaskResponseDto } from '../dtos/responses/task.response.dto';
 
 @Controller('workspaces/:workspaceId/projects/:projectId/tasks')
 export class TaskController {
-    constructor(
-        private readonly createTaskService: CreateTaskService,
-        private readonly getProjectTasksService: GetProjectTasksService,
-        private readonly updateTaskService: UpdateTaskService,
-    ) { }
+  constructor(
+    private readonly createTaskService: CreateTaskService,
+    private readonly getProjectTasksService: GetProjectTasksService,
+    private readonly updateTaskService: UpdateTaskService,
+  ) {}
 
-    @UseGuards(JwtAuthGuard)
-    @Post()
-    async createTask(
-        @CurrentUser('userId') userId: string,
-        @Param('workspaceId') workspaceId: string,
-        @Param('projectId') projectId: string,
-        @Body() dto: CreateTaskRequestDto,
-    ): Promise<TaskResponseDto> {
-        const result = await this.createTaskService.execute({
-            workspaceId,
-            projectId,
-            reporterId: userId,
-            title: dto.title,
-            description: dto.description,
-            priority: dto.priority,
-            startDate: dto.startDate,
-            dueDate: dto.dueDate,
-        });
+  @UseGuards(JwtAuthGuard)
+  @Post()
+  async createTask(
+    @CurrentUser('userId') userId: string,
+    @Param('workspaceId') workspaceId: string,
+    @Param('projectId') projectId: string,
+    @Body() dto: CreateTaskRequestDto,
+  ): Promise<TaskResponseDto> {
+    const result = await this.createTaskService.execute({
+      workspaceId,
+      projectId,
+      reporterId: userId,
+      title: dto.title,
+      description: dto.description,
+      priority: dto.priority,
+      startDate: dto.startDate,
+      dueDate: dto.dueDate,
+    });
 
-        return TaskResponseDto.fromResult(result);
-    }
+    return TaskResponseDto.fromResult(result);
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @Get()
-    async getProjectTasks(
-        @CurrentUser('userId') userId: string,
-        @Param('workspaceId') workspaceId: string,
-        @Param('projectId') projectId: string,
-    ): Promise<TaskListResponseDto> {
-        const result = await this.getProjectTasksService.execute({
-            workspaceId,
-            projectId,
-            userId,
-        });
+  @UseGuards(JwtAuthGuard)
+  @Get()
+  async getProjectTasks(
+    @CurrentUser('userId') userId: string,
+    @Param('workspaceId') workspaceId: string,
+    @Param('projectId') projectId: string,
+  ): Promise<TaskListResponseDto> {
+    const result = await this.getProjectTasksService.execute({
+      workspaceId,
+      projectId,
+      userId,
+    });
 
-        return TaskListResponseDto.fromResult(result);
-    }
+    return TaskListResponseDto.fromResult(result);
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @Patch(':taskId')
-    async updateTask(
-        @CurrentUser('userId') userId: string,
-        @Param('workspaceId') workspaceId: string,
-        @Param('projectId') projectId: string,
-        @Param('taskId') taskId: string,
-        @Body() dto: UpdateTaskRequestDto,
-    ): Promise<TaskResponseDto> {
-        const result = await this.updateTaskService.execute({
-            workspaceId,
-            projectId,
-            taskId,
-            userId,
-            title: dto.title,
-            description: dto.description,
-            status: dto.status,
-            priority: dto.priority,
-            startDate: dto.startDate,
-            dueDate: dto.dueDate,
-        });
+  @UseGuards(JwtAuthGuard)
+  @Patch(':taskId')
+  async updateTask(
+    @CurrentUser('userId') userId: string,
+    @Param('workspaceId') workspaceId: string,
+    @Param('projectId') projectId: string,
+    @Param('taskId') taskId: string,
+    @Body() dto: UpdateTaskRequestDto,
+  ): Promise<TaskResponseDto> {
+    const result = await this.updateTaskService.execute({
+      workspaceId,
+      projectId,
+      taskId,
+      userId,
+      title: dto.title,
+      description: dto.description,
+      status: dto.status,
+      priority: dto.priority,
+      startDate: dto.startDate,
+      dueDate: dto.dueDate,
+    });
 
-        return TaskResponseDto.fromResult(result);
-    }
+    return TaskResponseDto.fromResult(result);
+  }
 }

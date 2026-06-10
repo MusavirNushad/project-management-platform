@@ -1,30 +1,30 @@
 import { InvalidWorkspaceIdError } from '../errors/workspace-domain.errors';
 
 export class WorkspaceId {
-    private constructor(private readonly props: { value: string }) { }
+  private constructor(private readonly props: { value: string }) {}
 
-    static create(value: string): WorkspaceId {
-        const normalizedValue = value.trim();
+  static create(value: string): WorkspaceId {
+    const normalizedValue = value.trim();
 
-        if (!this.isValidUuid(normalizedValue)) {
-            throw new InvalidWorkspaceIdError();
-        }
-
-        return new WorkspaceId({ value: normalizedValue });
+    if (!this.isValidUuid(normalizedValue)) {
+      throw new InvalidWorkspaceIdError();
     }
 
-    get value(): string {
-        return this.props.value;
-    }
+    return new WorkspaceId({ value: normalizedValue });
+  }
 
-    equals(other: WorkspaceId): boolean {
-        return this.value === other.value;
-    }
+  get value(): string {
+    return this.props.value;
+  }
 
-    private static isValidUuid(value: string): boolean {
-        const uuidRegex =
-            /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  equals(other: WorkspaceId): boolean {
+    return this.value === other.value;
+  }
 
-        return uuidRegex.test(value);
-    }
+  private static isValidUuid(value: string): boolean {
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+    return uuidRegex.test(value);
+  }
 }

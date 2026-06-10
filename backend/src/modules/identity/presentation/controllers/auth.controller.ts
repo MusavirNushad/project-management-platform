@@ -1,10 +1,10 @@
 import {
-    Body,
-    Controller,
-    HttpCode,
-    HttpStatus,
-    Post,
-    UseGuards,
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UseGuards,
 } from '@nestjs/common';
 
 import { LoginUserService } from '../../application/services/auth/login-user.service';
@@ -24,59 +24,57 @@ import { LogoutResponseDto } from '../dtos/responses/logout.response.dto';
 
 @Controller('auth')
 export class AuthController {
-    constructor(
-        private readonly registerUserService: RegisterUserService,
-        private readonly loginUserService: LoginUserService,
-        private readonly refreshTokenService: RefreshTokenService,
-        private readonly logoutUserService: LogoutUserService,
-    ) { }
+  constructor(
+    private readonly registerUserService: RegisterUserService,
+    private readonly loginUserService: LoginUserService,
+    private readonly refreshTokenService: RefreshTokenService,
+    private readonly logoutUserService: LogoutUserService,
+  ) {}
 
-    @Post('register')
-    async register(
-        @Body() dto: RegisterUserRequestDto,
-    ): Promise<AuthResponseDto> {
-        const result = await this.registerUserService.execute({
-            name: dto.name,
-            email: dto.email,
-            password: dto.password,
-        });
+  @Post('register')
+  async register(
+    @Body() dto: RegisterUserRequestDto,
+  ): Promise<AuthResponseDto> {
+    const result = await this.registerUserService.execute({
+      name: dto.name,
+      email: dto.email,
+      password: dto.password,
+    });
 
-        return AuthResponseDto.fromResult(result);
-    }
+    return AuthResponseDto.fromResult(result);
+  }
 
-    @HttpCode(HttpStatus.OK)
-    @Post('login')
-    async login(@Body() dto: LoginUserRequestDto): Promise<AuthResponseDto> {
-        const result = await this.loginUserService.execute({
-            email: dto.email,
-            password: dto.password,
-        });
+  @HttpCode(HttpStatus.OK)
+  @Post('login')
+  async login(@Body() dto: LoginUserRequestDto): Promise<AuthResponseDto> {
+    const result = await this.loginUserService.execute({
+      email: dto.email,
+      password: dto.password,
+    });
 
-        return AuthResponseDto.fromResult(result);
-    }
+    return AuthResponseDto.fromResult(result);
+  }
 
-    @HttpCode(HttpStatus.OK)
-    @Post('refresh')
-    async refresh(
-        @Body() dto: RefreshTokenRequestDto,
-    ): Promise<AuthResponseDto> {
-        const result = await this.refreshTokenService.execute({
-            refreshToken: dto.refreshToken,
-        });
+  @HttpCode(HttpStatus.OK)
+  @Post('refresh')
+  async refresh(@Body() dto: RefreshTokenRequestDto): Promise<AuthResponseDto> {
+    const result = await this.refreshTokenService.execute({
+      refreshToken: dto.refreshToken,
+    });
 
-        return AuthResponseDto.fromResult(result);
-    }
+    return AuthResponseDto.fromResult(result);
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @HttpCode(HttpStatus.OK)
-    @Post('logout')
-    async logout(
-        @CurrentUser('userId') userId: string,
-    ): Promise<LogoutResponseDto> {
-        const result = await this.logoutUserService.execute({
-            userId,
-        });
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @Post('logout')
+  async logout(
+    @CurrentUser('userId') userId: string,
+  ): Promise<LogoutResponseDto> {
+    const result = await this.logoutUserService.execute({
+      userId,
+    });
 
-        return LogoutResponseDto.fromResult(result);
-    }
+    return LogoutResponseDto.fromResult(result);
+  }
 }

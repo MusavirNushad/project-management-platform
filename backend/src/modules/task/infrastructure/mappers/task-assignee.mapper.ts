@@ -9,29 +9,29 @@ import { UserId } from '../../domain/value-objects/user-id.vo';
 import { WorkspaceId } from '../../domain/value-objects/workspace-id.vo';
 
 export class TaskAssigneeMapper {
-    static toDomain(assignee: PrismaTaskAssignee): TaskAssigneeEntity {
-        return TaskAssigneeEntity.restore({
-            id: TaskAssigneeId.create(assignee.id),
-            taskId: TaskId.create(assignee.taskId),
-            userId: UserId.create(assignee.userId),
-            assignedBy: UserId.create(assignee.assignedById),
-            workspaceId: WorkspaceId.create(assignee.workspaceId),
-            projectId: ProjectId.create(assignee.projectId),
-            assignedAt: assignee.assignedAt,
-        });
-    }
+  static toDomain(assignee: PrismaTaskAssignee): TaskAssigneeEntity {
+    return TaskAssigneeEntity.restore({
+      id: TaskAssigneeId.create(assignee.id),
+      taskId: TaskId.create(assignee.taskId),
+      userId: UserId.create(assignee.userId),
+      assignedBy: UserId.create(assignee.assignedById),
+      workspaceId: WorkspaceId.create(assignee.workspaceId),
+      projectId: ProjectId.create(assignee.projectId),
+      assignedAt: assignee.assignedAt,
+    });
+  }
 
-    static toPrismaCreate(
-        assignee: TaskAssigneeEntity,
-    ): Prisma.TaskAssigneeUncheckedCreateInput {
-        return {
-            id: assignee.getId(),
-            taskId: assignee.getTaskId(),
-            userId: assignee.getUserId(),
-            assignedById: assignee.getAssignedBy(),
-            workspaceId: assignee.getWorkspaceId(),
-            projectId: assignee.getProjectId(),
-            assignedAt: assignee.getAssignedAt(),
-        };
-    }
+  static toPrismaCreate(
+    assignee: TaskAssigneeEntity,
+  ): Prisma.TaskAssigneeUncheckedCreateInput {
+    return {
+      id: assignee.getId(),
+      taskId: assignee.getTaskId(),
+      userId: assignee.getUserId(),
+      assignedById: assignee.getAssignedBy(),
+      workspaceId: assignee.getWorkspaceId(),
+      projectId: assignee.getProjectId(),
+      assignedAt: assignee.getAssignedAt(),
+    };
+  }
 }

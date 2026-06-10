@@ -4,14 +4,14 @@ import { ReportPermissionService } from '../permissions/report-permission.servic
 
 import { REPORT_REPOSITORY } from '../../../domain/ports/report.repository.port';
 import type {
-    ReportDetails,
-    ReportRepositoryPort,
+  ReportDetails,
+  ReportRepositoryPort,
 } from '../../../domain/ports/report.repository.port';
 
 import {
-    ReportProjectAccessDeniedError,
-    ReportProjectNotFoundError,
-    ReportWorkspaceNotFoundError,
+  ReportProjectAccessDeniedError,
+  ReportProjectNotFoundError,
+  ReportWorkspaceNotFoundError,
 } from '../../../domain/errors/report-domain.errors';
 
 import { ProjectId } from '../../../domain/value-objects/project-id.vo';
@@ -21,64 +21,62 @@ import { WorkspaceId } from '../../../domain/value-objects/workspace-id.vo';
 export type ReportListItemResult = ReportDetails;
 
 export type GetProjectReportsInput = {
-    workspaceId: string;
-    projectId: string;
-    userId: string;
+  workspaceId: string;
+  projectId: string;
+  userId: string;
 };
 
 export type GetProjectReportsResult = {
-    items: ReportListItemResult[];
-    total: number;
+  items: ReportListItemResult[];
+  total: number;
 };
 
 @Injectable()
 export class GetProjectReportsService {
-    constructor(
-        @Inject(REPORT_REPOSITORY)
-        private readonly reportRepository: ReportRepositoryPort,
-        private readonly reportPermissionService: ReportPermissionService,
-    ) { }
+  constructor(
+    @Inject(REPORT_REPOSITORY)
+    private readonly reportRepository: ReportRepositoryPort,
+    private readonly reportPermissionService: ReportPermissionService,
+  ) {}
 
-    async execute(
-        input: GetProjectReportsInput,
-    ): Promise<GetProjectReportsResult> {
-        const workspaceId = WorkspaceId.create(input.workspaceId);
-        const projectId = ProjectId.create(input.projectId);
-        const userId = UserId.create(input.userId);
+  async execute(
+    input: GetProjectReportsInput,
+  ): Promise<GetProjectReportsResult> {
+    const workspaceId = WorkspaceId.create(input.workspaceId);
+    const projectId = ProjectId.create(input.projectId);
+    const userId = UserId.create(input.userId);
 
-        const workspaceExists =
-            await this.reportRepository.workspaceExists(workspaceId);
+    const workspaceExists =
+      await this.reportRepository.workspaceExists(workspaceId);
 
-        if (!workspaceExists) {
-            throw new ReportWorkspaceNotFoundError();
-        }
-
-        const projectExists =
-            await this.reportRepository.projectExistsInWorkspace(
-                workspaceId,
-                projectId,
-            );
-
-        if (!projectExists) {
-            throw new ReportProjectNotFoundError();
-        }
-
-        const canViewReports =
-            await this.reportPermissionService.canViewReports({
-                workspaceId,
-                projectId,
-                userId,
-            });
-
-        if (!canViewReports) {
-            throw new ReportProjectAccessDeniedError();
-        }
-
-        const reports = await this.reportRepository.findByProjectId(projectId);
-
-        return {
-            items: reports,
-            total: reports.length,
-        };
+    if (!workspaceExists) {
+      throw new ReportWorkspaceNotFoundError();
     }
+
+    const projectExists = await this.reportRepository.projectExistsInWorkspace(
+      workspaceId,
+      projectId,
+    );
+
+    if (!projectExists) {
+      throw new ReportProjectNotFoundError();
+    }
+
+    const canViewReports = await this.reportPermissionService.canViewReports({
+      workspaceId,
+      projectId,
+      userId,
+    });
+
+    if (!canViewReports) {
+      throw new ReportProjectAccessDeniedError();
+    }
+
+    const reports = await this.reportRepository.findByProjectId(projectId);
+
+    return {
+      items: reports,
+      total: reports.length,
+    };
+  }
 }

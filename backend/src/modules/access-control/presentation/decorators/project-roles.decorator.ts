@@ -7,4 +7,4 @@ import type { ProjectRoleName } from '../../application/types/access-control.typ
 export const PROJECT_ROLES_KEY = 'project_roles';
 
 export const ProjectRoles = (...roles: ProjectRoleName[]) =>
-    SetMetadata(PROJECT_ROLES_KEY, roles);
+  SetMetadata(PROJECT_ROLES_KEY, roles);

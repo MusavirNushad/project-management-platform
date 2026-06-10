@@ -9,47 +9,47 @@ import { WorkspaceSlug } from '../../domain/value-objects/workspace-slug.vo';
 import { WorkspaceMemberMapper } from './workspace-member.mapper';
 
 export type PrismaWorkspaceWithMembers = Prisma.WorkspaceGetPayload<{
-    include: {
-        members: true;
-    };
+  include: {
+    members: true;
+  };
 }>;
 
 export class WorkspaceMapper {
-    static toDomain(workspace: PrismaWorkspaceWithMembers): WorkspaceEntity {
-        return WorkspaceEntity.restore({
-            id: WorkspaceId.create(workspace.id),
-            ownerId: UserId.create(workspace.ownerId),
-            name: WorkspaceName.create(workspace.name),
-            slug: WorkspaceSlug.create(workspace.slug),
-            description: WorkspaceDescription.create(workspace.description),
-            members: workspace.members.map(WorkspaceMemberMapper.toDomain),
-            createdAt: workspace.createdAt,
-            updatedAt: workspace.updatedAt,
-        });
-    }
+  static toDomain(workspace: PrismaWorkspaceWithMembers): WorkspaceEntity {
+    return WorkspaceEntity.restore({
+      id: WorkspaceId.create(workspace.id),
+      ownerId: UserId.create(workspace.ownerId),
+      name: WorkspaceName.create(workspace.name),
+      slug: WorkspaceSlug.create(workspace.slug),
+      description: WorkspaceDescription.create(workspace.description),
+      members: workspace.members.map(WorkspaceMemberMapper.toDomain),
+      createdAt: workspace.createdAt,
+      updatedAt: workspace.updatedAt,
+    });
+  }
 
-    static toPrismaCreate(
-        workspace: WorkspaceEntity,
-    ): Prisma.WorkspaceUncheckedCreateInput {
-        return {
-            id: workspace.getId(),
-            ownerId: workspace.getOwnerId(),
-            name: workspace.getName(),
-            slug: workspace.getSlug(),
-            description: workspace.getDescription(),
-            createdAt: workspace.getCreatedAt(),
-            updatedAt: workspace.getUpdatedAt(),
-        };
-    }
+  static toPrismaCreate(
+    workspace: WorkspaceEntity,
+  ): Prisma.WorkspaceUncheckedCreateInput {
+    return {
+      id: workspace.getId(),
+      ownerId: workspace.getOwnerId(),
+      name: workspace.getName(),
+      slug: workspace.getSlug(),
+      description: workspace.getDescription(),
+      createdAt: workspace.getCreatedAt(),
+      updatedAt: workspace.getUpdatedAt(),
+    };
+  }
 
-    static toPrismaUpdate(
-        workspace: WorkspaceEntity,
-    ): Prisma.WorkspaceUncheckedUpdateInput {
-        return {
-            name: workspace.getName(),
-            slug: workspace.getSlug(),
-            description: workspace.getDescription(),
-            updatedAt: workspace.getUpdatedAt(),
-        };
-    }
+  static toPrismaUpdate(
+    workspace: WorkspaceEntity,
+  ): Prisma.WorkspaceUncheckedUpdateInput {
+    return {
+      name: workspace.getName(),
+      slug: workspace.getSlug(),
+      description: workspace.getDescription(),
+      updatedAt: workspace.getUpdatedAt(),
+    };
+  }
 }

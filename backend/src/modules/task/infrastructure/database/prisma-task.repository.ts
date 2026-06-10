@@ -4,12 +4,12 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../shared/infrastructure/database/prisma.service';
 
 import type {
-    ProjectMemberDetailsForTask,
-    ProjectMemberRoleName,
-    TaskAssigneeDetails,
-    TaskCommentDetails,
-    TaskRepositoryPort,
-    TaskUserDetails,
+  ProjectMemberDetailsForTask,
+  ProjectMemberRoleName,
+  TaskAssigneeDetails,
+  TaskCommentDetails,
+  TaskRepositoryPort,
+  TaskUserDetails,
 } from '../../domain/ports/task.repository.port';
 
 import { TaskAssigneeAlreadyExistsError } from '../../domain/errors/task-domain.errors';
@@ -30,546 +30,540 @@ import { TaskCommentMapper } from '../mappers/task-comment.mapper';
 import { TaskMapper } from '../mappers/task.mapper';
 
 type PrismaTaskAssigneeWithDetails = Prisma.TaskAssigneeGetPayload<{
-    include: {
-        user: {
-            select: {
-                id: true;
-                name: true;
-                email: true;
-            };
-        };
-        assignedBy: {
-            select: {
-                id: true;
-                name: true;
-                email: true;
-            };
-        };
+  include: {
+    user: {
+      select: {
+        id: true;
+        name: true;
+        email: true;
+      };
     };
+    assignedBy: {
+      select: {
+        id: true;
+        name: true;
+        email: true;
+      };
+    };
+  };
 }>;
 
 type PrismaTaskCommentWithDetails = Prisma.CommentGetPayload<{
-    include: {
-        author: {
-            select: {
-                id: true;
-                name: true;
-                email: true;
-            };
-        };
+  include: {
+    author: {
+      select: {
+        id: true;
+        name: true;
+        email: true;
+      };
     };
+  };
 }>;
 
 type PrismaProjectMemberWithRole = Prisma.ProjectMemberGetPayload<{
-    include: {
-        role: {
-            select: {
-                id: true;
-                name: true;
-            };
-        };
+  include: {
+    role: {
+      select: {
+        id: true;
+        name: true;
+      };
     };
+  };
 }>;
 
 @Injectable()
 export class PrismaTaskRepository implements TaskRepositoryPort {
-    constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
-    async save(task: TaskEntity): Promise<TaskEntity> {
-        const savedTask = await this.prisma.$transaction(async (tx) => {
-            const prismaTask = await tx.task.upsert({
-                where: {
-                    id: task.getId(),
-                },
-                create: TaskMapper.toPrismaCreate(task),
-                update: TaskMapper.toPrismaUpdate(task),
-                include: {
-                    assignees: true,
-                },
-            });
+  async save(task: TaskEntity): Promise<TaskEntity> {
+    const savedTask = await this.prisma.$transaction(async (tx) => {
+      const prismaTask = await tx.task.upsert({
+        where: {
+          id: task.getId(),
+        },
+        create: TaskMapper.toPrismaCreate(task),
+        update: TaskMapper.toPrismaUpdate(task),
+        include: {
+          assignees: true,
+        },
+      });
 
-            const assignees = task.getAssignees();
+      const assignees = task.getAssignees();
 
-            for (const assignee of assignees) {
-                await tx.taskAssignee.upsert({
-                    where: {
-                        taskId_userId: {
-                            taskId: assignee.getTaskId(),
-                            userId: assignee.getUserId(),
-                        },
-                    },
-                    create: TaskAssigneeMapper.toPrismaCreate(assignee),
-                    update: {},
-                });
-            }
-
-            return tx.task.findUniqueOrThrow({
-                where: {
-                    id: prismaTask.id,
-                },
-                include: {
-                    assignees: true,
-                },
-            });
+      for (const assignee of assignees) {
+        await tx.taskAssignee.upsert({
+          where: {
+            taskId_userId: {
+              taskId: assignee.getTaskId(),
+              userId: assignee.getUserId(),
+            },
+          },
+          create: TaskAssigneeMapper.toPrismaCreate(assignee),
+          update: {},
         });
+      }
 
-        return TaskMapper.toDomain(savedTask);
-    }
+      return tx.task.findUniqueOrThrow({
+        where: {
+          id: prismaTask.id,
+        },
+        include: {
+          assignees: true,
+        },
+      });
+    });
 
-    async findById(taskId: TaskId): Promise<TaskEntity | null> {
-        const task = await this.prisma.task.findUnique({
-            where: {
-                id: taskId.value,
-            },
-            include: {
-                assignees: true,
-            },
-        });
+    return TaskMapper.toDomain(savedTask);
+  }
 
-        return task ? TaskMapper.toDomain(task) : null;
-    }
+  async findById(taskId: TaskId): Promise<TaskEntity | null> {
+    const task = await this.prisma.task.findUnique({
+      where: {
+        id: taskId.value,
+      },
+      include: {
+        assignees: true,
+      },
+    });
 
-    async findByProjectAndId(
-        workspaceId: WorkspaceId,
-        projectId: ProjectId,
-        taskId: TaskId,
-    ): Promise<TaskEntity | null> {
-        const task = await this.prisma.task.findFirst({
-            where: {
-                id: taskId.value,
-                workspaceId: workspaceId.value,
-                projectId: projectId.value,
-            },
-            include: {
-                assignees: true,
-            },
-        });
+    return task ? TaskMapper.toDomain(task) : null;
+  }
 
-        return task ? TaskMapper.toDomain(task) : null;
-    }
+  async findByProjectAndId(
+    workspaceId: WorkspaceId,
+    projectId: ProjectId,
+    taskId: TaskId,
+  ): Promise<TaskEntity | null> {
+    const task = await this.prisma.task.findFirst({
+      where: {
+        id: taskId.value,
+        workspaceId: workspaceId.value,
+        projectId: projectId.value,
+      },
+      include: {
+        assignees: true,
+      },
+    });
 
-    async findByProjectId(
-        workspaceId: WorkspaceId,
-        projectId: ProjectId,
-    ): Promise<TaskEntity[]> {
-        const tasks = await this.prisma.task.findMany({
-            where: {
-                workspaceId: workspaceId.value,
-                projectId: projectId.value,
-            },
-            include: {
-                assignees: true,
-            },
-            orderBy: {
-                createdAt: 'desc',
-            },
-        });
+    return task ? TaskMapper.toDomain(task) : null;
+  }
 
-        return tasks.map((task) => TaskMapper.toDomain(task));
-    }
+  async findByProjectId(
+    workspaceId: WorkspaceId,
+    projectId: ProjectId,
+  ): Promise<TaskEntity[]> {
+    const tasks = await this.prisma.task.findMany({
+      where: {
+        workspaceId: workspaceId.value,
+        projectId: projectId.value,
+      },
+      include: {
+        assignees: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
 
-    async workspaceExists(workspaceId: WorkspaceId): Promise<boolean> {
-        const count = await this.prisma.workspace.count({
-            where: {
-                id: workspaceId.value,
-            },
-        });
+    return tasks.map((task) => TaskMapper.toDomain(task));
+  }
 
-        return count > 0;
-    }
+  async workspaceExists(workspaceId: WorkspaceId): Promise<boolean> {
+    const count = await this.prisma.workspace.count({
+      where: {
+        id: workspaceId.value,
+      },
+    });
 
-    async projectExistsInWorkspace(
-        workspaceId: WorkspaceId,
-        projectId: ProjectId,
-    ): Promise<boolean> {
-        const count = await this.prisma.project.count({
-            where: {
-                id: projectId.value,
-                workspaceId: workspaceId.value,
-            },
-        });
+    return count > 0;
+  }
 
-        return count > 0;
-    }
+  async projectExistsInWorkspace(
+    workspaceId: WorkspaceId,
+    projectId: ProjectId,
+  ): Promise<boolean> {
+    const count = await this.prisma.project.count({
+      where: {
+        id: projectId.value,
+        workspaceId: workspaceId.value,
+      },
+    });
 
-    async isWorkspaceOwner(
-        workspaceId: WorkspaceId,
-        userId: UserId,
-    ): Promise<boolean> {
-        const count = await this.prisma.workspace.count({
-            where: {
-                id: workspaceId.value,
-                ownerId: userId.value,
-            },
-        });
+    return count > 0;
+  }
 
-        return count > 0;
-    }
+  async isWorkspaceOwner(
+    workspaceId: WorkspaceId,
+    userId: UserId,
+  ): Promise<boolean> {
+    const count = await this.prisma.workspace.count({
+      where: {
+        id: workspaceId.value,
+        ownerId: userId.value,
+      },
+    });
 
-    async isProjectMember(
-        projectId: ProjectId,
-        userId: UserId,
-    ): Promise<boolean> {
-        const count = await this.prisma.projectMember.count({
-            where: {
-                projectId: projectId.value,
-                userId: userId.value,
-            },
-        });
+    return count > 0;
+  }
 
-        return count > 0;
-    }
+  async isProjectMember(
+    projectId: ProjectId,
+    userId: UserId,
+  ): Promise<boolean> {
+    const count = await this.prisma.projectMember.count({
+      where: {
+        projectId: projectId.value,
+        userId: userId.value,
+      },
+    });
 
-    async findProjectMemberByProjectAndUser(
-        projectId: ProjectId,
-        userId: UserId,
-    ): Promise<ProjectMemberDetailsForTask | null> {
-        const projectMember = await this.prisma.projectMember.findFirst({
-            where: {
-                projectId: projectId.value,
-                userId: userId.value,
-            },
-            include: {
-                role: {
-                    select: {
-                        id: true,
-                        name: true,
-                    },
-                },
-            },
-        });
+    return count > 0;
+  }
 
-        return projectMember
-            ? this.toProjectMemberDetailsForTask(projectMember)
-            : null;
-    }
+  async findProjectMemberByProjectAndUser(
+    projectId: ProjectId,
+    userId: UserId,
+  ): Promise<ProjectMemberDetailsForTask | null> {
+    const projectMember = await this.prisma.projectMember.findFirst({
+      where: {
+        projectId: projectId.value,
+        userId: userId.value,
+      },
+      include: {
+        role: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
 
-    async findUserById(userId: UserId): Promise<TaskUserDetails | null> {
-        const user = await this.prisma.user.findUnique({
-            where: {
-                id: userId.value,
-            },
+    return projectMember
+      ? this.toProjectMemberDetailsForTask(projectMember)
+      : null;
+  }
+
+  async findUserById(userId: UserId): Promise<TaskUserDetails | null> {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId.value,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    });
+
+    return user ? this.toUserDetails(user) : null;
+  }
+
+  async saveTaskAssignee(
+    taskAssignee: TaskAssigneeEntity,
+  ): Promise<TaskAssigneeDetails> {
+    try {
+      const createdAssignee = await this.prisma.taskAssignee.create({
+        data: TaskAssigneeMapper.toPrismaCreate(taskAssignee),
+        include: {
+          user: {
             select: {
-                id: true,
-                name: true,
-                email: true,
+              id: true,
+              name: true,
+              email: true,
             },
-        });
+          },
+          assignedBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      });
 
-        return user ? this.toUserDetails(user) : null;
+      return this.toTaskAssigneeDetails(createdAssignee);
+    } catch (error) {
+      if (this.isUniqueConstraintError(error)) {
+        throw new TaskAssigneeAlreadyExistsError();
+      }
+
+      throw error;
     }
+  }
 
-    async saveTaskAssignee(
-        taskAssignee: TaskAssigneeEntity,
-    ): Promise<TaskAssigneeDetails> {
-        try {
-            const createdAssignee = await this.prisma.taskAssignee.create({
-                data: TaskAssigneeMapper.toPrismaCreate(taskAssignee),
-                include: {
-                    user: {
-                        select: {
-                            id: true,
-                            name: true,
-                            email: true,
-                        },
-                    },
-                    assignedBy: {
-                        select: {
-                            id: true,
-                            name: true,
-                            email: true,
-                        },
-                    },
-                },
-            });
+  async findTaskAssigneesByTaskId(
+    taskId: TaskId,
+  ): Promise<TaskAssigneeDetails[]> {
+    const assignees = await this.prisma.taskAssignee.findMany({
+      where: {
+        taskId: taskId.value,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        assignedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        assignedAt: 'desc',
+      },
+    });
 
-            return this.toTaskAssigneeDetails(createdAssignee);
-        } catch (error) {
-            if (this.isUniqueConstraintError(error)) {
-                throw new TaskAssigneeAlreadyExistsError();
-            }
+    return assignees.map((assignee) => this.toTaskAssigneeDetails(assignee));
+  }
 
-            throw error;
-        }
-    }
+  async findTaskAssigneeById(
+    assigneeId: TaskAssigneeId,
+  ): Promise<TaskAssigneeDetails | null> {
+    const assignee = await this.prisma.taskAssignee.findUnique({
+      where: {
+        id: assigneeId.value,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        assignedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
 
-    async findTaskAssigneesByTaskId(
-        taskId: TaskId,
-    ): Promise<TaskAssigneeDetails[]> {
-        const assignees = await this.prisma.taskAssignee.findMany({
-            where: {
-                taskId: taskId.value,
-            },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                    },
-                },
-                assignedBy: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                    },
-                },
-            },
-            orderBy: {
-                assignedAt: 'desc',
-            },
-        });
+    return assignee ? this.toTaskAssigneeDetails(assignee) : null;
+  }
 
-        return assignees.map((assignee) =>
-            this.toTaskAssigneeDetails(assignee),
-        );
-    }
+  async findTaskAssigneeByTaskAndUser(
+    taskId: TaskId,
+    userId: UserId,
+  ): Promise<TaskAssigneeDetails | null> {
+    const assignee = await this.prisma.taskAssignee.findUnique({
+      where: {
+        taskId_userId: {
+          taskId: taskId.value,
+          userId: userId.value,
+        },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        assignedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
 
-    async findTaskAssigneeById(
-        assigneeId: TaskAssigneeId,
-    ): Promise<TaskAssigneeDetails | null> {
-        const assignee = await this.prisma.taskAssignee.findUnique({
-            where: {
-                id: assigneeId.value,
-            },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                    },
-                },
-                assignedBy: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                    },
-                },
-            },
-        });
+    return assignee ? this.toTaskAssigneeDetails(assignee) : null;
+  }
 
-        return assignee ? this.toTaskAssigneeDetails(assignee) : null;
-    }
+  async deleteTaskAssigneeById(assigneeId: TaskAssigneeId): Promise<void> {
+    await this.prisma.taskAssignee.delete({
+      where: {
+        id: assigneeId.value,
+      },
+    });
+  }
 
-    async findTaskAssigneeByTaskAndUser(
-        taskId: TaskId,
-        userId: UserId,
-    ): Promise<TaskAssigneeDetails | null> {
-        const assignee = await this.prisma.taskAssignee.findUnique({
-            where: {
-                taskId_userId: {
-                    taskId: taskId.value,
-                    userId: userId.value,
-                },
-            },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                    },
-                },
-                assignedBy: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                    },
-                },
-            },
-        });
+  async saveTaskComment(
+    comment: TaskCommentEntity,
+  ): Promise<TaskCommentDetails> {
+    const createdComment = await this.prisma.comment.create({
+      data: TaskCommentMapper.toPrismaCreate(comment),
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
 
-        return assignee ? this.toTaskAssigneeDetails(assignee) : null;
-    }
+    return this.toTaskCommentDetails(createdComment);
+  }
 
-    async deleteTaskAssigneeById(
-        assigneeId: TaskAssigneeId,
-    ): Promise<void> {
-        await this.prisma.taskAssignee.delete({
-            where: {
-                id: assigneeId.value,
-            },
-        });
-    }
+  async findTaskCommentsByTaskId(
+    taskId: TaskId,
+  ): Promise<TaskCommentDetails[]> {
+    const comments = await this.prisma.comment.findMany({
+      where: {
+        taskId: taskId.value,
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
 
-    async saveTaskComment(
-        comment: TaskCommentEntity,
-    ): Promise<TaskCommentDetails> {
-        const createdComment = await this.prisma.comment.create({
-            data: TaskCommentMapper.toPrismaCreate(comment),
-            include: {
-                author: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                    },
-                },
-            },
-        });
+    return comments.map((comment) => this.toTaskCommentDetails(comment));
+  }
 
-        return this.toTaskCommentDetails(createdComment);
-    }
+  async findTaskCommentById(
+    commentId: TaskCommentId,
+  ): Promise<TaskCommentDetails | null> {
+    const comment = await this.prisma.comment.findUnique({
+      where: {
+        id: commentId.value,
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
 
-    async findTaskCommentsByTaskId(
-        taskId: TaskId,
-    ): Promise<TaskCommentDetails[]> {
-        const comments = await this.prisma.comment.findMany({
-            where: {
-                taskId: taskId.value,
-            },
-            include: {
-                author: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                    },
-                },
-            },
-            orderBy: {
-                createdAt: 'asc',
-            },
-        });
+    return comment ? this.toTaskCommentDetails(comment) : null;
+  }
 
-        return comments.map((comment) => this.toTaskCommentDetails(comment));
-    }
+  async updateTaskComment(
+    comment: TaskCommentEntity,
+  ): Promise<TaskCommentDetails> {
+    const updatedComment = await this.prisma.comment.update({
+      where: {
+        id: comment.getId(),
+      },
+      data: TaskCommentMapper.toPrismaUpdate(comment),
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
 
-    async findTaskCommentById(
-        commentId: TaskCommentId,
-    ): Promise<TaskCommentDetails | null> {
-        const comment = await this.prisma.comment.findUnique({
-            where: {
-                id: commentId.value,
-            },
-            include: {
-                author: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                    },
-                },
-            },
-        });
+    return this.toTaskCommentDetails(updatedComment);
+  }
 
-        return comment ? this.toTaskCommentDetails(comment) : null;
-    }
+  async hasCommentReplies(commentId: TaskCommentId): Promise<boolean> {
+    const count = await this.prisma.comment.count({
+      where: {
+        parentCommentId: commentId.value,
+      },
+    });
 
-    async updateTaskComment(
-        comment: TaskCommentEntity,
-    ): Promise<TaskCommentDetails> {
-        const updatedComment = await this.prisma.comment.update({
-            where: {
-                id: comment.getId(),
-            },
-            data: TaskCommentMapper.toPrismaUpdate(comment),
-            include: {
-                author: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                    },
-                },
-            },
-        });
+    return count > 0;
+  }
 
-        return this.toTaskCommentDetails(updatedComment);
-    }
+  async deleteTaskCommentById(commentId: TaskCommentId): Promise<void> {
+    await this.prisma.comment.delete({
+      where: {
+        id: commentId.value,
+      },
+    });
+  }
 
-    async hasCommentReplies(commentId: TaskCommentId): Promise<boolean> {
-        const count = await this.prisma.comment.count({
-            where: {
-                parentCommentId: commentId.value,
-            },
-        });
+  private toTaskAssigneeDetails(
+    assignee: PrismaTaskAssigneeWithDetails,
+  ): TaskAssigneeDetails {
+    return {
+      id: assignee.id,
+      taskId: assignee.taskId,
+      userId: assignee.userId,
+      assignedBy: assignee.assignedById,
+      workspaceId: assignee.workspaceId,
+      projectId: assignee.projectId,
+      user: this.toUserDetails(assignee.user),
+      assignedByUser: this.toUserDetails(assignee.assignedBy),
+      assignedAt: assignee.assignedAt,
+    };
+  }
 
-        return count > 0;
-    }
+  private toTaskCommentDetails(
+    comment: PrismaTaskCommentWithDetails,
+  ): TaskCommentDetails {
+    return {
+      id: comment.id,
+      taskId: comment.taskId,
+      authorId: comment.authorId,
+      parentCommentId: comment.parentCommentId,
+      body: comment.body,
+      attachments: this.toUnknownArray(comment.attachments),
+      author: this.toUserDetails(comment.author),
+      createdAt: comment.createdAt,
+      updatedAt: comment.updatedAt,
+    };
+  }
 
-    async deleteTaskCommentById(
-        commentId: TaskCommentId,
-    ): Promise<void> {
-        await this.prisma.comment.delete({
-            where: {
-                id: commentId.value,
-            },
-        });
-    }
+  private toProjectMemberDetailsForTask(
+    projectMember: PrismaProjectMemberWithRole,
+  ): ProjectMemberDetailsForTask {
+    return {
+      id: projectMember.id,
+      projectId: projectMember.projectId,
+      userId: projectMember.userId,
+      role: {
+        id: projectMember.role.id,
+        name: projectMember.role.name as ProjectMemberRoleName,
+      },
+    };
+  }
 
-    private toTaskAssigneeDetails(
-        assignee: PrismaTaskAssigneeWithDetails,
-    ): TaskAssigneeDetails {
-        return {
-            id: assignee.id,
-            taskId: assignee.taskId,
-            userId: assignee.userId,
-            assignedBy: assignee.assignedById,
-            workspaceId: assignee.workspaceId,
-            projectId: assignee.projectId,
-            user: this.toUserDetails(assignee.user),
-            assignedByUser: this.toUserDetails(assignee.assignedBy),
-            assignedAt: assignee.assignedAt,
-        };
-    }
+  private toUserDetails(user: {
+    id: string;
+    name: string;
+    email: string;
+  }): TaskUserDetails {
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+    };
+  }
 
-    private toTaskCommentDetails(
-        comment: PrismaTaskCommentWithDetails,
-    ): TaskCommentDetails {
-        return {
-            id: comment.id,
-            taskId: comment.taskId,
-            authorId: comment.authorId,
-            parentCommentId: comment.parentCommentId,
-            body: comment.body,
-            attachments: this.toUnknownArray(comment.attachments),
-            author: this.toUserDetails(comment.author),
-            createdAt: comment.createdAt,
-            updatedAt: comment.updatedAt,
-        };
-    }
+  private toUnknownArray(value: Prisma.JsonValue): unknown[] {
+    return Array.isArray(value) ? value : [];
+  }
 
-    private toProjectMemberDetailsForTask(
-        projectMember: PrismaProjectMemberWithRole,
-    ): ProjectMemberDetailsForTask {
-        return {
-            id: projectMember.id,
-            projectId: projectMember.projectId,
-            userId: projectMember.userId,
-            role: {
-                id: projectMember.role.id,
-                name: projectMember.role.name as ProjectMemberRoleName,
-            },
-        };
-    }
-
-    private toUserDetails(user: {
-        id: string;
-        name: string;
-        email: string;
-    }): TaskUserDetails {
-        return {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-        };
-    }
-
-    private toUnknownArray(value: Prisma.JsonValue): unknown[] {
-        return Array.isArray(value) ? value : [];
-    }
-
-    private isUniqueConstraintError(
-        error: unknown,
-    ): error is Prisma.PrismaClientKnownRequestError {
-        return (
-            error instanceof Prisma.PrismaClientKnownRequestError &&
-            error.code === 'P2002'
-        );
-    }
+  private isUniqueConstraintError(
+    error: unknown,
+  ): error is Prisma.PrismaClientKnownRequestError {
+    return (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    );
+  }
 }

@@ -1,30 +1,30 @@
 import { InvalidReportProjectIdError } from '../errors/report-domain.errors';
 
 export class ProjectId {
-    private constructor(private readonly props: { value: string }) { }
+  private constructor(private readonly props: { value: string }) {}
 
-    static create(value: string): ProjectId {
-        const normalizedValue = typeof value === 'string' ? value.trim() : '';
+  static create(value: string): ProjectId {
+    const normalizedValue = typeof value === 'string' ? value.trim() : '';
 
-        if (!this.isValidUuid(normalizedValue)) {
-            throw new InvalidReportProjectIdError();
-        }
-
-        return new ProjectId({ value: normalizedValue });
+    if (!this.isValidUuid(normalizedValue)) {
+      throw new InvalidReportProjectIdError();
     }
 
-    get value(): string {
-        return this.props.value;
-    }
+    return new ProjectId({ value: normalizedValue });
+  }
 
-    equals(other: ProjectId): boolean {
-        return this.value === other.value;
-    }
+  get value(): string {
+    return this.props.value;
+  }
 
-    private static isValidUuid(value: string): boolean {
-        const uuidRegex =
-            /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  equals(other: ProjectId): boolean {
+    return this.value === other.value;
+  }
 
-        return uuidRegex.test(value);
-    }
+  private static isValidUuid(value: string): boolean {
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+    return uuidRegex.test(value);
+  }
 }

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { PrismaModule } from '../../shared/infrastructure/database/prisma.module';
 import { IdentityModule } from '../identity/identity.module';
+import { AccessControlModule } from '../access-control/access-control.module';
 
 import { CreateTaskService } from './application/services/tasks/create-task.service';
 import { GetProjectTasksService } from './application/services/tasks/get-project-tasks.service';
@@ -23,26 +24,25 @@ import { TaskController } from './presentation/controllers/task.controller';
 import { TaskAssigneeController } from './presentation/controllers/task-assignee.controller';
 import { TaskCommentController } from './presentation/controllers/task-comment.controller';
 
-
 @Module({
-    imports: [PrismaModule, IdentityModule],
-    controllers: [TaskController, TaskAssigneeController, TaskCommentController],
-    providers: [
-        CreateTaskService,
-        GetProjectTasksService,
-        UpdateTaskService,
-        TaskPermissionService,
-        AddTaskAssigneeService,
-        GetTaskAssigneesService,
-        RemoveTaskAssigneeService,
-        CreateTaskCommentService,
-        GetTaskCommentsService,
-        UpdateTaskCommentService,
-        DeleteTaskCommentService,
-        {
-            provide: TASK_REPOSITORY,
-            useClass: PrismaTaskRepository,
-        },
-    ],
+  imports: [PrismaModule, IdentityModule, AccessControlModule],
+  controllers: [TaskController, TaskAssigneeController, TaskCommentController],
+  providers: [
+    CreateTaskService,
+    GetProjectTasksService,
+    UpdateTaskService,
+    TaskPermissionService,
+    AddTaskAssigneeService,
+    GetTaskAssigneesService,
+    RemoveTaskAssigneeService,
+    CreateTaskCommentService,
+    GetTaskCommentsService,
+    UpdateTaskCommentService,
+    DeleteTaskCommentService,
+    {
+      provide: TASK_REPOSITORY,
+      useClass: PrismaTaskRepository,
+    },
+  ],
 })
-export class TaskModule { }
+export class TaskModule {}

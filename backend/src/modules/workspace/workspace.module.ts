@@ -19,21 +19,21 @@ import { WorkspaceController } from './presentation/controllers/workspace.contro
 import { WorkspaceMemberController } from './presentation/controllers/workspace-member.controller';
 
 @Module({
-    imports: [PrismaModule, IdentityModule],
-    controllers: [WorkspaceController, WorkspaceMemberController],
-    providers: [
-        CreateWorkspaceService,
-        GetMyWorkspacesService,
-        GetWorkspaceByIdService,
-        UpdateWorkspaceService,
+  imports: [PrismaModule, IdentityModule],
+  controllers: [WorkspaceController, WorkspaceMemberController],
+  providers: [
+    CreateWorkspaceService,
+    GetMyWorkspacesService,
+    GetWorkspaceByIdService,
+    UpdateWorkspaceService,
 
-        GetWorkspaceMembersService,
-        AddWorkspaceMemberService,
-        RemoveWorkspaceMemberService,
-        {
-            provide: WORKSPACE_REPOSITORY,
-            useClass: PrismaWorkspaceRepository,
-        },
-    ],
+    GetWorkspaceMembersService,
+    AddWorkspaceMemberService,
+    RemoveWorkspaceMemberService,
+    {
+      provide: WORKSPACE_REPOSITORY,
+      useClass: PrismaWorkspaceRepository,
+    },
+  ],
 })
-export class WorkspaceModule { }
+export class WorkspaceModule {}

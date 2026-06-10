@@ -9,31 +9,31 @@ import { WorkspaceId } from '../../../domain/value-objects/workspace-id.vo';
 
 @Injectable()
 export class ProjectMemberPermissionService {
-    constructor(
-        @Inject(PROJECT_REPOSITORY)
-        private readonly projectRepository: ProjectRepositoryPort,
-    ) { }
+  constructor(
+    @Inject(PROJECT_REPOSITORY)
+    private readonly projectRepository: ProjectRepositoryPort,
+  ) {}
 
-    async canManageProjectMembers(params: {
-        workspaceId: WorkspaceId;
-        projectId: ProjectId;
-        actorUserId: UserId;
-    }): Promise<boolean> {
-        const isWorkspaceOwner = await this.projectRepository.isWorkspaceOwner(
-            params.workspaceId,
-            params.actorUserId,
-        );
+  async canManageProjectMembers(params: {
+    workspaceId: WorkspaceId;
+    projectId: ProjectId;
+    actorUserId: UserId;
+  }): Promise<boolean> {
+    const isWorkspaceOwner = await this.projectRepository.isWorkspaceOwner(
+      params.workspaceId,
+      params.actorUserId,
+    );
 
-        if (isWorkspaceOwner) {
-            return true;
-        }
-
-        const projectMember =
-            await this.projectRepository.findProjectMemberDetailsByProjectAndUser(
-                params.projectId,
-                params.actorUserId,
-            );
-
-        return projectMember?.role.name === 'ADMIN';
+    if (isWorkspaceOwner) {
+      return true;
     }
+
+    const projectMember =
+      await this.projectRepository.findProjectMemberDetailsByProjectAndUser(
+        params.projectId,
+        params.actorUserId,
+      );
+
+    return projectMember?.role.name === 'ADMIN';
+  }
 }

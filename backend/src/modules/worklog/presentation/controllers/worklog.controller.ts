@@ -1,12 +1,12 @@
 import {
-    Body,
-    Controller,
-    Get,
-    Param,
-    Patch,
-    Post,
-    Delete,
-    UseGuards,
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Delete,
+  UseGuards,
 } from '@nestjs/common';
 
 import { CreateWorklogService } from '../../application/services/worklogs/create-worklog.service';
@@ -25,117 +25,119 @@ import { WorklogListResponseDto } from '../dtos/responses/worklog-list.response.
 import { WorklogResponseDto } from '../dtos/responses/worklog.response.dto';
 import { DeleteWorklogResponseDto } from '../dtos/responses/delete-worklog.response.dto';
 
-@Controller('workspaces/:workspaceId/projects/:projectId/tasks/:taskId/worklogs')
+@Controller(
+  'workspaces/:workspaceId/projects/:projectId/tasks/:taskId/worklogs',
+)
 export class WorklogController {
-    constructor(
-        private readonly createWorklogService: CreateWorklogService,
-        private readonly getTaskWorklogsService: GetTaskWorklogsService,
-        private readonly getWorklogByIdService: GetWorklogByIdService,
-        private readonly updateWorklogService: UpdateWorklogService,
-        private readonly deleteWorklogService: DeleteWorklogService,
-    ) { }
+  constructor(
+    private readonly createWorklogService: CreateWorklogService,
+    private readonly getTaskWorklogsService: GetTaskWorklogsService,
+    private readonly getWorklogByIdService: GetWorklogByIdService,
+    private readonly updateWorklogService: UpdateWorklogService,
+    private readonly deleteWorklogService: DeleteWorklogService,
+  ) {}
 
-    @UseGuards(JwtAuthGuard)
-    @Post()
-    async createWorklog(
-        @CurrentUser('userId') userId: string,
-        @Param('workspaceId') workspaceId: string,
-        @Param('projectId') projectId: string,
-        @Param('taskId') taskId: string,
-        @Body() dto: CreateWorklogRequestDto,
-    ): Promise<WorklogResponseDto> {
-        const result = await this.createWorklogService.execute({
-            workspaceId,
-            projectId,
-            taskId,
-            userId,
-            startedAt: dto.startedAt,
-            endedAt: dto.endedAt,
-            description: dto.description,
-        });
+  @UseGuards(JwtAuthGuard)
+  @Post()
+  async createWorklog(
+    @CurrentUser('userId') userId: string,
+    @Param('workspaceId') workspaceId: string,
+    @Param('projectId') projectId: string,
+    @Param('taskId') taskId: string,
+    @Body() dto: CreateWorklogRequestDto,
+  ): Promise<WorklogResponseDto> {
+    const result = await this.createWorklogService.execute({
+      workspaceId,
+      projectId,
+      taskId,
+      userId,
+      startedAt: dto.startedAt,
+      endedAt: dto.endedAt,
+      description: dto.description,
+    });
 
-        return WorklogResponseDto.fromResult(result);
-    }
+    return WorklogResponseDto.fromResult(result);
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @Get()
-    async getTaskWorklogs(
-        @CurrentUser('userId') userId: string,
-        @Param('workspaceId') workspaceId: string,
-        @Param('projectId') projectId: string,
-        @Param('taskId') taskId: string,
-    ): Promise<WorklogListResponseDto> {
-        const result = await this.getTaskWorklogsService.execute({
-            workspaceId,
-            projectId,
-            taskId,
-            userId,
-        });
+  @UseGuards(JwtAuthGuard)
+  @Get()
+  async getTaskWorklogs(
+    @CurrentUser('userId') userId: string,
+    @Param('workspaceId') workspaceId: string,
+    @Param('projectId') projectId: string,
+    @Param('taskId') taskId: string,
+  ): Promise<WorklogListResponseDto> {
+    const result = await this.getTaskWorklogsService.execute({
+      workspaceId,
+      projectId,
+      taskId,
+      userId,
+    });
 
-        return WorklogListResponseDto.fromResult(result);
-    }
+    return WorklogListResponseDto.fromResult(result);
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @Get(':worklogId')
-    async getWorklogById(
-        @CurrentUser('userId') userId: string,
-        @Param('workspaceId') workspaceId: string,
-        @Param('projectId') projectId: string,
-        @Param('taskId') taskId: string,
-        @Param('worklogId') worklogId: string,
-    ): Promise<WorklogResponseDto> {
-        const result = await this.getWorklogByIdService.execute({
-            workspaceId,
-            projectId,
-            taskId,
-            worklogId,
-            userId,
-        });
+  @UseGuards(JwtAuthGuard)
+  @Get(':worklogId')
+  async getWorklogById(
+    @CurrentUser('userId') userId: string,
+    @Param('workspaceId') workspaceId: string,
+    @Param('projectId') projectId: string,
+    @Param('taskId') taskId: string,
+    @Param('worklogId') worklogId: string,
+  ): Promise<WorklogResponseDto> {
+    const result = await this.getWorklogByIdService.execute({
+      workspaceId,
+      projectId,
+      taskId,
+      worklogId,
+      userId,
+    });
 
-        return WorklogResponseDto.fromResult(result);
-    }
+    return WorklogResponseDto.fromResult(result);
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @Patch(':worklogId')
-    async updateWorklog(
-        @CurrentUser('userId') userId: string,
-        @Param('workspaceId') workspaceId: string,
-        @Param('projectId') projectId: string,
-        @Param('taskId') taskId: string,
-        @Param('worklogId') worklogId: string,
-        @Body() dto: UpdateWorklogRequestDto,
-    ): Promise<WorklogResponseDto> {
-        const result = await this.updateWorklogService.execute({
-            workspaceId,
-            projectId,
-            taskId,
-            worklogId,
-            userId,
-            startedAt: dto.startedAt,
-            endedAt: dto.endedAt,
-            description: dto.description,
-        });
+  @UseGuards(JwtAuthGuard)
+  @Patch(':worklogId')
+  async updateWorklog(
+    @CurrentUser('userId') userId: string,
+    @Param('workspaceId') workspaceId: string,
+    @Param('projectId') projectId: string,
+    @Param('taskId') taskId: string,
+    @Param('worklogId') worklogId: string,
+    @Body() dto: UpdateWorklogRequestDto,
+  ): Promise<WorklogResponseDto> {
+    const result = await this.updateWorklogService.execute({
+      workspaceId,
+      projectId,
+      taskId,
+      worklogId,
+      userId,
+      startedAt: dto.startedAt,
+      endedAt: dto.endedAt,
+      description: dto.description,
+    });
 
-        return WorklogResponseDto.fromResult(result);
-    }
+    return WorklogResponseDto.fromResult(result);
+  }
 
-    @UseGuards(JwtAuthGuard)
-    @Delete(':worklogId')
-    async deleteWorklog(
-        @CurrentUser('userId') userId: string,
-        @Param('workspaceId') workspaceId: string,
-        @Param('projectId') projectId: string,
-        @Param('taskId') taskId: string,
-        @Param('worklogId') worklogId: string,
-    ): Promise<DeleteWorklogResponseDto> {
-        const result = await this.deleteWorklogService.execute({
-            workspaceId,
-            projectId,
-            taskId,
-            worklogId,
-            userId,
-        });
+  @UseGuards(JwtAuthGuard)
+  @Delete(':worklogId')
+  async deleteWorklog(
+    @CurrentUser('userId') userId: string,
+    @Param('workspaceId') workspaceId: string,
+    @Param('projectId') projectId: string,
+    @Param('taskId') taskId: string,
+    @Param('worklogId') worklogId: string,
+  ): Promise<DeleteWorklogResponseDto> {
+    const result = await this.deleteWorklogService.execute({
+      workspaceId,
+      projectId,
+      taskId,
+      worklogId,
+      userId,
+    });
 
-        return DeleteWorklogResponseDto.fromResult(result);
-    }
+    return DeleteWorklogResponseDto.fromResult(result);
+  }
 }

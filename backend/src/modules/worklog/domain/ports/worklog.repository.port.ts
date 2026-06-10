@@ -11,88 +11,82 @@ export const WORKLOG_REPOSITORY = Symbol('WORKLOG_REPOSITORY');
 export type ProjectMemberRoleName = 'OWNER' | 'ADMIN' | 'MEMBER';
 
 export type ProjectMemberDetailsForWorklog = {
+  id: string;
+  projectId: string;
+  userId: string;
+  role: {
     id: string;
-    projectId: string;
-    userId: string;
-    role: {
-        id: string;
-        name: ProjectMemberRoleName;
-    };
+    name: ProjectMemberRoleName;
+  };
 };
 
 export type WorklogUserDetails = {
-    id: string;
-    name: string;
-    email: string;
+  id: string;
+  name: string;
+  email: string;
 };
 
 export type WorklogTaskStatus =
-    | 'TODO'
-    | 'IN_PROGRESS'
-    | 'IN_REVIEW'
-    | 'DONE'
-    | 'CANCELLED';
+  | 'TODO'
+  | 'IN_PROGRESS'
+  | 'IN_REVIEW'
+  | 'DONE'
+  | 'CANCELLED';
 
 export type WorklogTaskPriority = 'LOW' | 'MEDIUM' | 'HIGH';
 
 export type WorklogTaskDetails = {
-    id: string;
-    workspaceId: string;
-    projectId: string;
-    title: string;
-    status: WorklogTaskStatus;
-    priority: WorklogTaskPriority;
+  id: string;
+  workspaceId: string;
+  projectId: string;
+  title: string;
+  status: WorklogTaskStatus;
+  priority: WorklogTaskPriority;
 };
 
 export type WorklogDetails = {
-    id: string;
-    userId: string;
-    projectId: string;
-    taskId: string;
-    startedAt: Date;
-    endedAt: Date | null;
-    durationMin: number | null;
-    description: string | null;
-    createdAt: Date;
-    user: WorklogUserDetails;
+  id: string;
+  userId: string;
+  projectId: string;
+  taskId: string;
+  startedAt: Date;
+  endedAt: Date | null;
+  durationMin: number | null;
+  description: string | null;
+  createdAt: Date;
+  user: WorklogUserDetails;
 };
 
 export interface WorklogRepositoryPort {
-    save(worklog: WorklogEntity): Promise<WorklogDetails>;
+  save(worklog: WorklogEntity): Promise<WorklogDetails>;
 
-    findById(worklogId: WorklogId): Promise<WorklogDetails | null>;
+  findById(worklogId: WorklogId): Promise<WorklogDetails | null>;
 
-    findByTaskId(taskId: TaskId): Promise<WorklogDetails[]>;
+  findByTaskId(taskId: TaskId): Promise<WorklogDetails[]>;
 
-    update(worklog: WorklogEntity): Promise<WorklogDetails>;
+  update(worklog: WorklogEntity): Promise<WorklogDetails>;
 
-    deleteById(worklogId: WorklogId): Promise<void>;
+  deleteById(worklogId: WorklogId): Promise<void>;
 
-    workspaceExists(workspaceId: WorkspaceId): Promise<boolean>;
+  workspaceExists(workspaceId: WorkspaceId): Promise<boolean>;
 
-    projectExistsInWorkspace(
-        workspaceId: WorkspaceId,
-        projectId: ProjectId,
-    ): Promise<boolean>;
+  projectExistsInWorkspace(
+    workspaceId: WorkspaceId,
+    projectId: ProjectId,
+  ): Promise<boolean>;
 
-    findTaskByProjectAndId(
-        workspaceId: WorkspaceId,
-        projectId: ProjectId,
-        taskId: TaskId,
-    ): Promise<WorklogTaskDetails | null>;
+  findTaskByProjectAndId(
+    workspaceId: WorkspaceId,
+    projectId: ProjectId,
+    taskId: TaskId,
+  ): Promise<WorklogTaskDetails | null>;
 
-    isWorkspaceOwner(
-        workspaceId: WorkspaceId,
-        userId: UserId,
-    ): Promise<boolean>;
+  isWorkspaceOwner(workspaceId: WorkspaceId, userId: UserId): Promise<boolean>;
 
-    isProjectMember(
-        projectId: ProjectId,
-        userId: UserId,
-    ): Promise<boolean>;
+  isProjectMember(projectId: ProjectId, userId: UserId): Promise<boolean>;
 
-    findProjectMemberByProjectAndUser(
-        projectId: ProjectId,
-        userId: UserId,
-    ): Promise<ProjectMemberDetailsForWorklog | null>;
+  findProjectMemberByProjectAndUser(
+    projectId: ProjectId,
+    userId: UserId,
+  ): Promise<ProjectMemberDetailsForWorklog | null>;
 }

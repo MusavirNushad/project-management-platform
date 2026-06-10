@@ -4,9 +4,9 @@ import { WORKSPACE_REPOSITORY } from '../../../domain/ports/workspace.repository
 import type { WorkspaceRepositoryPort } from '../../../domain/ports/workspace.repository.port';
 
 import {
-    WorkspaceAccessDeniedError,
-    WorkspaceAlreadyExistsError,
-    WorkspaceNotFoundError,
+  WorkspaceAccessDeniedError,
+  WorkspaceAlreadyExistsError,
+  WorkspaceNotFoundError,
 } from '../../../domain/errors/workspace-domain.errors';
 
 import { UserId } from '../../../domain/value-objects/user-id.vo';
@@ -18,116 +18,116 @@ import { WorkspaceSlug } from '../../../domain/value-objects/workspace-slug.vo';
 const MaxSlugGenerationAttempts = 10;
 
 export type UpdateWorkspaceInput = {
-    workspaceId: string;
-    userId: string;
-    name?: string;
-    description?: string | null;
+  workspaceId: string;
+  userId: string;
+  name?: string;
+  description?: string | null;
 };
 
 export type UpdateWorkspaceResult = {
-    id: string;
-    ownerId: string;
-    name: string;
-    slug: string;
-    description: string | null;
-    createdAt: Date;
-    updatedAt: Date;
+  id: string;
+  ownerId: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 @Injectable()
 export class UpdateWorkspaceService {
-    constructor(
-        @Inject(WORKSPACE_REPOSITORY)
-        private readonly workspaceRepository: WorkspaceRepositoryPort,
-    ) { }
+  constructor(
+    @Inject(WORKSPACE_REPOSITORY)
+    private readonly workspaceRepository: WorkspaceRepositoryPort,
+  ) {}
 
-    async execute(input: UpdateWorkspaceInput): Promise<UpdateWorkspaceResult> {
-        const workspaceId = WorkspaceId.create(input.workspaceId);
-        const userId = UserId.create(input.userId);
+  async execute(input: UpdateWorkspaceInput): Promise<UpdateWorkspaceResult> {
+    const workspaceId = WorkspaceId.create(input.workspaceId);
+    const userId = UserId.create(input.userId);
 
-        const workspace = await this.workspaceRepository.findById(workspaceId);
+    const workspace = await this.workspaceRepository.findById(workspaceId);
 
-        if (!workspace) {
-            throw new WorkspaceNotFoundError();
-        }
-
-        if (!workspace.isOwnedBy(userId)) {
-            throw new WorkspaceAccessDeniedError();
-        }
-
-        const shouldUpdateName = input.name !== undefined;
-        const shouldUpdateDescription = input.description !== undefined;
-
-        if (!shouldUpdateName && !shouldUpdateDescription) {
-            return this.toResult(workspace);
-        }
-
-        const name = shouldUpdateName
-            ? WorkspaceName.create(input.name as string)
-            : undefined;
-
-        const slug = name
-            ? await this.generateUniqueSlugForUpdate(name.value, workspaceId)
-            : undefined;
-
-        const description = shouldUpdateDescription
-            ? WorkspaceDescription.create(input.description)
-            : undefined;
-
-        workspace.updateDetails({
-            name,
-            slug,
-            description,
-        });
-
-        const savedWorkspace = await this.workspaceRepository.save(workspace);
-
-        return this.toResult(savedWorkspace);
+    if (!workspace) {
+      throw new WorkspaceNotFoundError();
     }
 
-    private async generateUniqueSlugForUpdate(
-        name: string,
-        currentWorkspaceId: WorkspaceId,
-    ): Promise<WorkspaceSlug> {
-        const baseSlug = WorkspaceSlug.fromName(name);
-
-        for (let attempt = 1; attempt <= MaxSlugGenerationAttempts; attempt++) {
-            const slug =
-                attempt === 1
-                    ? baseSlug
-                    : WorkspaceSlug.create(`${baseSlug.value}-${attempt}`);
-
-            const existingWorkspace = await this.workspaceRepository.findBySlug(slug);
-
-            if (!existingWorkspace) {
-                return slug;
-            }
-
-            if (existingWorkspace.getId() === currentWorkspaceId.value) {
-                return slug;
-            }
-        }
-
-        throw new WorkspaceAlreadyExistsError();
+    if (!workspace.isOwnedBy(userId)) {
+      throw new WorkspaceAccessDeniedError();
     }
 
-    private toResult(workspace: {
-        getId(): string;
-        getOwnerId(): string;
-        getName(): string;
-        getSlug(): string;
-        getDescription(): string | null;
-        getCreatedAt(): Date;
-        getUpdatedAt(): Date;
-    }): UpdateWorkspaceResult {
-        return {
-            id: workspace.getId(),
-            ownerId: workspace.getOwnerId(),
-            name: workspace.getName(),
-            slug: workspace.getSlug(),
-            description: workspace.getDescription(),
-            createdAt: workspace.getCreatedAt(),
-            updatedAt: workspace.getUpdatedAt(),
-        };
+    const shouldUpdateName = input.name !== undefined;
+    const shouldUpdateDescription = input.description !== undefined;
+
+    if (!shouldUpdateName && !shouldUpdateDescription) {
+      return this.toResult(workspace);
     }
+
+    const name = shouldUpdateName
+      ? WorkspaceName.create(input.name as string)
+      : undefined;
+
+    const slug = name
+      ? await this.generateUniqueSlugForUpdate(name.value, workspaceId)
+      : undefined;
+
+    const description = shouldUpdateDescription
+      ? WorkspaceDescription.create(input.description)
+      : undefined;
+
+    workspace.updateDetails({
+      name,
+      slug,
+      description,
+    });
+
+    const savedWorkspace = await this.workspaceRepository.save(workspace);
+
+    return this.toResult(savedWorkspace);
+  }
+
+  private async generateUniqueSlugForUpdate(
+    name: string,
+    currentWorkspaceId: WorkspaceId,
+  ): Promise<WorkspaceSlug> {
+    const baseSlug = WorkspaceSlug.fromName(name);
+
+    for (let attempt = 1; attempt <= MaxSlugGenerationAttempts; attempt++) {
+      const slug =
+        attempt === 1
+          ? baseSlug
+          : WorkspaceSlug.create(`${baseSlug.value}-${attempt}`);
+
+      const existingWorkspace = await this.workspaceRepository.findBySlug(slug);
+
+      if (!existingWorkspace) {
+        return slug;
+      }
+
+      if (existingWorkspace.getId() === currentWorkspaceId.value) {
+        return slug;
+      }
+    }
+
+    throw new WorkspaceAlreadyExistsError();
+  }
+
+  private toResult(workspace: {
+    getId(): string;
+    getOwnerId(): string;
+    getName(): string;
+    getSlug(): string;
+    getDescription(): string | null;
+    getCreatedAt(): Date;
+    getUpdatedAt(): Date;
+  }): UpdateWorkspaceResult {
+    return {
+      id: workspace.getId(),
+      ownerId: workspace.getOwnerId(),
+      name: workspace.getName(),
+      slug: workspace.getSlug(),
+      description: workspace.getDescription(),
+      createdAt: workspace.getCreatedAt(),
+      updatedAt: workspace.getUpdatedAt(),
+    };
+  }
 }

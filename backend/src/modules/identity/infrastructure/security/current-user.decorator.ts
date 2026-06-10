@@ -1,35 +1,33 @@
-
 import {
-    createParamDecorator,
-    ExecutionContext,
-    UnauthorizedException,
+  createParamDecorator,
+  ExecutionContext,
+  UnauthorizedException,
 } from '@nestjs/common';
 import type { Request } from 'express';
 
 import type { AuthTokenPayload } from '../../application/ports/token-service.port';
 
 type AuthenticatedRequest = Request & {
-    user?: AuthTokenPayload;
+  user?: AuthTokenPayload;
 };
 
 export const CurrentUser = createParamDecorator(
-    (
-        data: keyof AuthTokenPayload | undefined,
-        context: ExecutionContext,
-    ): AuthTokenPayload | string => {
-        const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+  (
+    data: keyof AuthTokenPayload | undefined,
+    context: ExecutionContext,
+  ): AuthTokenPayload | string => {
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
 
-        const user = request.user;
+    const user = request.user;
 
-        if (!user) {
-            throw new UnauthorizedException('Unauthorized.');
-        }
+    if (!user) {
+      throw new UnauthorizedException('Unauthorized.');
+    }
 
-        if (data) {
-            return user[data];
-        }
+    if (data) {
+      return user[data];
+    }
 
-        return user;
-    },
+    return user;
+  },
 );
-

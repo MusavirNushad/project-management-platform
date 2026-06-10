@@ -1,7 +1,6 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
-import { TASK_REPOSITORY } from '../../../domain/ports/task.repository.port';
-import type { TaskRepositoryPort } from '../../../domain/ports/task.repository.port';
+import { AccessControlService } from '../../../../access-control/application/services/access-control.service';
 
 import type { TaskEntity } from '../../../domain/entities/task.entity';
 
@@ -10,214 +9,165 @@ import { UserId } from '../../../domain/value-objects/user-id.vo';
 import { WorkspaceId } from '../../../domain/value-objects/workspace-id.vo';
 
 type CanCreateTaskInput = {
-    workspaceId: WorkspaceId;
-    projectId: ProjectId;
-    userId: UserId;
+  workspaceId: WorkspaceId;
+  projectId: ProjectId;
+  userId: UserId;
 };
 
 type CanViewProjectTasksInput = {
-    workspaceId: WorkspaceId;
-    projectId: ProjectId;
-    userId: UserId;
+  workspaceId: WorkspaceId;
+  projectId: ProjectId;
+  userId: UserId;
 };
 
 type CanUpdateTaskInput = {
-    workspaceId: WorkspaceId;
-    projectId: ProjectId;
-    userId: UserId;
-    task: TaskEntity;
+  workspaceId: WorkspaceId;
+  projectId: ProjectId;
+  userId: UserId;
+  task: TaskEntity;
 };
 
 type CanManageTaskAssigneesInput = {
-    workspaceId: WorkspaceId;
-    projectId: ProjectId;
-    userId: UserId;
-    task: TaskEntity;
+  workspaceId: WorkspaceId;
+  projectId: ProjectId;
+  userId: UserId;
+  task: TaskEntity;
 };
 
 type CanViewTaskAssigneesInput = {
-    workspaceId: WorkspaceId;
-    projectId: ProjectId;
-    userId: UserId;
+  workspaceId: WorkspaceId;
+  projectId: ProjectId;
+  userId: UserId;
 };
 
 type CanCreateTaskCommentInput = {
-    workspaceId: WorkspaceId;
-    projectId: ProjectId;
-    userId: UserId;
+  workspaceId: WorkspaceId;
+  projectId: ProjectId;
+  userId: UserId;
 };
 
 type CanViewTaskCommentsInput = {
-    workspaceId: WorkspaceId;
-    projectId: ProjectId;
-    userId: UserId;
+  workspaceId: WorkspaceId;
+  projectId: ProjectId;
+  userId: UserId;
 };
 
 type CanDeleteTaskCommentInput = {
-    workspaceId: WorkspaceId;
-    projectId: ProjectId;
-    userId: UserId;
-    authorId: UserId;
+  workspaceId: WorkspaceId;
+  projectId: ProjectId;
+  userId: UserId;
+  authorId: UserId;
 };
-
 
 @Injectable()
 export class TaskPermissionService {
-    constructor(
-        @Inject(TASK_REPOSITORY)
-        private readonly taskRepository: TaskRepositoryPort,
-    ) { }
+  constructor(private readonly accessControlService: AccessControlService) {}
 
-    async canCreateTask(input: CanCreateTaskInput): Promise<boolean> {
-        const isWorkspaceOwner = await this.taskRepository.isWorkspaceOwner(
-            input.workspaceId,
-            input.userId,
-        );
+  async canCreateTask(input: CanCreateTaskInput): Promise<boolean> {
+    return this.accessControlService.canAccessProject({
+      workspaceId: input.workspaceId.value,
+      projectId: input.projectId.value,
+      userId: input.userId.value,
+    });
+  }
 
-        if (isWorkspaceOwner) {
-            return true;
-        }
+  async canViewProjectTasks(input: CanViewProjectTasksInput): Promise<boolean> {
+    return this.accessControlService.canAccessProject({
+      workspaceId: input.workspaceId.value,
+      projectId: input.projectId.value,
+      userId: input.userId.value,
+    });
+  }
 
-        return this.taskRepository.isProjectMember(input.projectId, input.userId);
+  async canUpdateTask(input: CanUpdateTaskInput): Promise<boolean> {
+    const canManageProject = await this.accessControlService.canManageProject({
+      workspaceId: input.workspaceId.value,
+      projectId: input.projectId.value,
+      userId: input.userId.value,
+    });
+
+    if (canManageProject) {
+      return true;
     }
 
-    async canViewProjectTasks(input: CanViewProjectTasksInput): Promise<boolean> {
-        const isWorkspaceOwner = await this.taskRepository.isWorkspaceOwner(
-            input.workspaceId,
-            input.userId,
-        );
+    const canAccessProject = await this.accessControlService.canAccessProject({
+      workspaceId: input.workspaceId.value,
+      projectId: input.projectId.value,
+      userId: input.userId.value,
+    });
 
-        if (isWorkspaceOwner) {
-            return true;
-        }
-
-        return this.taskRepository.isProjectMember(input.projectId, input.userId);
+    if (!canAccessProject) {
+      return false;
     }
 
-    async canUpdateTask(input: CanUpdateTaskInput): Promise<boolean> {
-        const isWorkspaceOwner = await this.taskRepository.isWorkspaceOwner(
-            input.workspaceId,
-            input.userId,
-        );
+    return input.task.isReportedBy(input.userId);
+  }
 
-        if (isWorkspaceOwner) {
-            return true;
-        }
+  async canManageTaskAssignees(
+    input: CanManageTaskAssigneesInput,
+  ): Promise<boolean> {
+    const canManageProject = await this.accessControlService.canManageProject({
+      workspaceId: input.workspaceId.value,
+      projectId: input.projectId.value,
+      userId: input.userId.value,
+    });
 
-        const projectMember =
-            await this.taskRepository.findProjectMemberByProjectAndUser(
-                input.projectId,
-                input.userId,
-            );
-
-        if (!projectMember) {
-            return false;
-        }
-
-        if (projectMember.role.name === 'ADMIN') {
-            return true;
-        }
-
-        return input.task.isReportedBy(input.userId);
+    if (canManageProject) {
+      return true;
     }
 
-    async canManageTaskAssignees(
-        input: CanManageTaskAssigneesInput,
-    ): Promise<boolean> {
-        const isWorkspaceOwner = await this.taskRepository.isWorkspaceOwner(
-            input.workspaceId,
-            input.userId,
-        );
+    const canAccessProject = await this.accessControlService.canAccessProject({
+      workspaceId: input.workspaceId.value,
+      projectId: input.projectId.value,
+      userId: input.userId.value,
+    });
 
-        if (isWorkspaceOwner) {
-            return true;
-        }
-
-        const projectMember =
-            await this.taskRepository.findProjectMemberByProjectAndUser(
-                input.projectId,
-                input.userId,
-            );
-
-        if (!projectMember) {
-            return false;
-        }
-
-        if (projectMember.role.name === 'ADMIN') {
-            return true;
-        }
-
-        return input.task.isReportedBy(input.userId);
+    if (!canAccessProject) {
+      return false;
     }
 
-    async canViewTaskAssignees(
-        input: CanViewTaskAssigneesInput,
-    ): Promise<boolean> {
-        const isWorkspaceOwner = await this.taskRepository.isWorkspaceOwner(
-            input.workspaceId,
-            input.userId,
-        );
+    return input.task.isReportedBy(input.userId);
+  }
 
-        if (isWorkspaceOwner) {
-            return true;
-        }
+  async canViewTaskAssignees(
+    input: CanViewTaskAssigneesInput,
+  ): Promise<boolean> {
+    return this.accessControlService.canAccessProject({
+      workspaceId: input.workspaceId.value,
+      projectId: input.projectId.value,
+      userId: input.userId.value,
+    });
+  }
 
-        return this.taskRepository.isProjectMember(input.projectId, input.userId);
+  async canCreateTaskComment(
+    input: CanCreateTaskCommentInput,
+  ): Promise<boolean> {
+    return this.accessControlService.canAccessProject({
+      workspaceId: input.workspaceId.value,
+      projectId: input.projectId.value,
+      userId: input.userId.value,
+    });
+  }
+
+  async canViewTaskComments(input: CanViewTaskCommentsInput): Promise<boolean> {
+    return this.accessControlService.canAccessProject({
+      workspaceId: input.workspaceId.value,
+      projectId: input.projectId.value,
+      userId: input.userId.value,
+    });
+  }
+
+  async canDeleteTaskComment(
+    input: CanDeleteTaskCommentInput,
+  ): Promise<boolean> {
+    if (input.authorId.equals(input.userId)) {
+      return true;
     }
 
-    async canCreateTaskComment(
-        input: CanCreateTaskCommentInput,
-    ): Promise<boolean> {
-        const isWorkspaceOwner = await this.taskRepository.isWorkspaceOwner(
-            input.workspaceId,
-            input.userId,
-        );
-
-        if (isWorkspaceOwner) {
-            return true;
-        }
-
-        return this.taskRepository.isProjectMember(input.projectId, input.userId);
-    }
-
-
-    async canViewTaskComments(
-        input: CanViewTaskCommentsInput,
-    ): Promise<boolean> {
-        const isWorkspaceOwner = await this.taskRepository.isWorkspaceOwner(
-            input.workspaceId,
-            input.userId,
-        );
-
-        if (isWorkspaceOwner) {
-            return true;
-        }
-
-        return this.taskRepository.isProjectMember(input.projectId, input.userId);
-    }
-
-    async canDeleteTaskComment(
-        input: CanDeleteTaskCommentInput,
-    ): Promise<boolean> {
-        if (input.authorId.equals(input.userId)) {
-            return true;
-        }
-
-        const isWorkspaceOwner = await this.taskRepository.isWorkspaceOwner(
-            input.workspaceId,
-            input.userId,
-        );
-
-        if (isWorkspaceOwner) {
-            return true;
-        }
-
-        const projectMember =
-            await this.taskRepository.findProjectMemberByProjectAndUser(
-                input.projectId,
-                input.userId,
-            );
-
-        return projectMember?.role.name === 'ADMIN';
-    }
+    return this.accessControlService.canManageProject({
+      workspaceId: input.workspaceId.value,
+      projectId: input.projectId.value,
+      userId: input.userId.value,
+    });
+  }
 }

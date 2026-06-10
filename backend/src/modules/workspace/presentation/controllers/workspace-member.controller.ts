@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Delete, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Delete,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 
 import { AddWorkspaceMemberService } from '../../application/services/members/add-workspace-member.service';
 import { GetWorkspaceMembersService } from '../../application/services/members/get-workspace-members.service';
@@ -15,58 +23,56 @@ import { RemoveWorkspaceMemberResponseDto } from '../dtos/responses/remove-works
 
 @Controller('workspaces/:workspaceId/members')
 export class WorkspaceMemberController {
-    constructor(
-        private readonly getWorkspaceMembersService: GetWorkspaceMembersService,
-        private readonly addWorkspaceMemberService: AddWorkspaceMemberService,
-        private readonly removeWorkspaceMemberService: RemoveWorkspaceMemberService,
+  constructor(
+    private readonly getWorkspaceMembersService: GetWorkspaceMembersService,
+    private readonly addWorkspaceMemberService: AddWorkspaceMemberService,
+    private readonly removeWorkspaceMemberService: RemoveWorkspaceMemberService,
+  ) {}
 
-    ) { }
+  @UseGuards(JwtAuthGuard)
+  @Get()
+  async getWorkspaceMembers(
+    @CurrentUser('userId') userId: string,
+    @Param('workspaceId') workspaceId: string,
+  ): Promise<WorkspaceMemberListResponseDto> {
+    const result = await this.getWorkspaceMembersService.execute({
+      workspaceId,
+      userId,
+    });
 
-    @UseGuards(JwtAuthGuard)
-    @Get()
-    async getWorkspaceMembers(
-        @CurrentUser('userId') userId: string,
-        @Param('workspaceId') workspaceId: string,
-    ): Promise<WorkspaceMemberListResponseDto> {
-        const result = await this.getWorkspaceMembersService.execute({
-            workspaceId,
-            userId,
-        });
+    return WorkspaceMemberListResponseDto.fromResult(result);
+  }
 
-        return WorkspaceMemberListResponseDto.fromResult(result);
-    }
+  @UseGuards(JwtAuthGuard)
+  @Post()
+  async addWorkspaceMember(
+    @CurrentUser('userId') actorUserId: string,
+    @Param('workspaceId') workspaceId: string,
+    @Body() dto: AddWorkspaceMemberRequestDto,
+  ): Promise<WorkspaceMemberResponseDto> {
+    const result = await this.addWorkspaceMemberService.execute({
+      workspaceId,
+      actorUserId,
+      email: dto.email,
+      roleName: dto.roleName,
+    });
 
-    @UseGuards(JwtAuthGuard)
-    @Post()
-    async addWorkspaceMember(
-        @CurrentUser('userId') actorUserId: string,
-        @Param('workspaceId') workspaceId: string,
-        @Body() dto: AddWorkspaceMemberRequestDto,
-    ): Promise<WorkspaceMemberResponseDto> {
-        const result = await this.addWorkspaceMemberService.execute({
-            workspaceId,
-            actorUserId,
-            email: dto.email,
-            roleName: dto.roleName,
-        });
+    return WorkspaceMemberResponseDto.fromResult(result);
+  }
 
-        return WorkspaceMemberResponseDto.fromResult(result);
-    }
+  @UseGuards(JwtAuthGuard)
+  @Delete(':memberId')
+  async removeWorkspaceMember(
+    @CurrentUser('userId') actorUserId: string,
+    @Param('workspaceId') workspaceId: string,
+    @Param('memberId') memberId: string,
+  ): Promise<RemoveWorkspaceMemberResponseDto> {
+    const result = await this.removeWorkspaceMemberService.execute({
+      workspaceId,
+      actorUserId,
+      memberId,
+    });
 
-
-    @UseGuards(JwtAuthGuard)
-    @Delete(':memberId')
-    async removeWorkspaceMember(
-        @CurrentUser('userId') actorUserId: string,
-        @Param('workspaceId') workspaceId: string,
-        @Param('memberId') memberId: string,
-    ): Promise<RemoveWorkspaceMemberResponseDto> {
-        const result = await this.removeWorkspaceMemberService.execute({
-            workspaceId,
-            actorUserId,
-            memberId,
-        });
-
-        return RemoveWorkspaceMemberResponseDto.fromResult(result);
-    }
+    return RemoveWorkspaceMemberResponseDto.fromResult(result);
+  }
 }

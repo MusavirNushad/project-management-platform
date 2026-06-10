@@ -5,18 +5,18 @@ import { TaskPermissionService } from '../permissions/task-permission.service';
 
 import { TASK_REPOSITORY } from '../../../domain/ports/task.repository.port';
 import type {
-    TaskCommentDetails,
-    TaskRepositoryPort,
+  TaskCommentDetails,
+  TaskRepositoryPort,
 } from '../../../domain/ports/task.repository.port';
 
 import { TaskCommentEntity } from '../../../domain/entities/task-comment.entity';
 
 import {
-    TaskAccessDeniedError,
-    TaskCommentTaskMismatchError,
-    TaskNotFoundError,
-    TaskProjectNotFoundError,
-    TaskWorkspaceNotFoundError,
+  TaskAccessDeniedError,
+  TaskCommentTaskMismatchError,
+  TaskNotFoundError,
+  TaskProjectNotFoundError,
+  TaskWorkspaceNotFoundError,
 } from '../../../domain/errors/task-domain.errors';
 
 import { ProjectId } from '../../../domain/value-objects/project-id.vo';
@@ -27,93 +27,93 @@ import { UserId } from '../../../domain/value-objects/user-id.vo';
 import { WorkspaceId } from '../../../domain/value-objects/workspace-id.vo';
 
 export type CreateTaskCommentInput = {
-    workspaceId: string;
-    projectId: string;
-    taskId: string;
-    authorId: string;
-    body: string;
-    parentCommentId?: string | null;
+  workspaceId: string;
+  projectId: string;
+  taskId: string;
+  authorId: string;
+  body: string;
+  parentCommentId?: string | null;
 };
 
 export type CreateTaskCommentResult = TaskCommentDetails;
 
 @Injectable()
 export class CreateTaskCommentService {
-    constructor(
-        @Inject(TASK_REPOSITORY)
-        private readonly taskRepository: TaskRepositoryPort,
-        private readonly taskPermissionService: TaskPermissionService,
-    ) { }
+  constructor(
+    @Inject(TASK_REPOSITORY)
+    private readonly taskRepository: TaskRepositoryPort,
+    private readonly taskPermissionService: TaskPermissionService,
+  ) {}
 
-    async execute(
-        input: CreateTaskCommentInput,
-    ): Promise<CreateTaskCommentResult> {
-        const workspaceId = WorkspaceId.create(input.workspaceId);
-        const projectId = ProjectId.create(input.projectId);
-        const taskId = TaskId.create(input.taskId);
-        const authorId = UserId.create(input.authorId);
+  async execute(
+    input: CreateTaskCommentInput,
+  ): Promise<CreateTaskCommentResult> {
+    const workspaceId = WorkspaceId.create(input.workspaceId);
+    const projectId = ProjectId.create(input.projectId);
+    const taskId = TaskId.create(input.taskId);
+    const authorId = UserId.create(input.authorId);
 
-        const body = TaskCommentBody.create(input.body);
+    const body = TaskCommentBody.create(input.body);
 
-        const workspaceExists =
-            await this.taskRepository.workspaceExists(workspaceId);
+    const workspaceExists =
+      await this.taskRepository.workspaceExists(workspaceId);
 
-        if (!workspaceExists) {
-            throw new TaskWorkspaceNotFoundError();
-        }
-
-        const projectExists = await this.taskRepository.projectExistsInWorkspace(
-            workspaceId,
-            projectId,
-        );
-
-        if (!projectExists) {
-            throw new TaskProjectNotFoundError();
-        }
-
-        const task = await this.taskRepository.findByProjectAndId(
-            workspaceId,
-            projectId,
-            taskId,
-        );
-
-        if (!task) {
-            throw new TaskNotFoundError();
-        }
-
-        const canCreateTaskComment =
-            await this.taskPermissionService.canCreateTaskComment({
-                workspaceId,
-                projectId,
-                userId: authorId,
-            });
-
-        if (!canCreateTaskComment) {
-            throw new TaskAccessDeniedError();
-        }
-
-        const parentCommentId = input.parentCommentId
-            ? TaskCommentId.create(input.parentCommentId)
-            : null;
-
-        if (parentCommentId) {
-            const parentComment =
-                await this.taskRepository.findTaskCommentById(parentCommentId);
-
-            if (!parentComment || parentComment.taskId !== taskId.value) {
-                throw new TaskCommentTaskMismatchError();
-            }
-        }
-
-        const comment = TaskCommentEntity.create({
-            id: TaskCommentId.create(randomUUID()),
-            taskId,
-            authorId,
-            parentCommentId,
-            body,
-            attachments: [],
-        });
-
-        return this.taskRepository.saveTaskComment(comment);
+    if (!workspaceExists) {
+      throw new TaskWorkspaceNotFoundError();
     }
+
+    const projectExists = await this.taskRepository.projectExistsInWorkspace(
+      workspaceId,
+      projectId,
+    );
+
+    if (!projectExists) {
+      throw new TaskProjectNotFoundError();
+    }
+
+    const task = await this.taskRepository.findByProjectAndId(
+      workspaceId,
+      projectId,
+      taskId,
+    );
+
+    if (!task) {
+      throw new TaskNotFoundError();
+    }
+
+    const canCreateTaskComment =
+      await this.taskPermissionService.canCreateTaskComment({
+        workspaceId,
+        projectId,
+        userId: authorId,
+      });
+
+    if (!canCreateTaskComment) {
+      throw new TaskAccessDeniedError();
+    }
+
+    const parentCommentId = input.parentCommentId
+      ? TaskCommentId.create(input.parentCommentId)
+      : null;
+
+    if (parentCommentId) {
+      const parentComment =
+        await this.taskRepository.findTaskCommentById(parentCommentId);
+
+      if (!parentComment || parentComment.taskId !== taskId.value) {
+        throw new TaskCommentTaskMismatchError();
+      }
+    }
+
+    const comment = TaskCommentEntity.create({
+      id: TaskCommentId.create(randomUUID()),
+      taskId,
+      authorId,
+      parentCommentId,
+      body,
+      attachments: [],
+    });
+
+    return this.taskRepository.saveTaskComment(comment);
+  }
 }
