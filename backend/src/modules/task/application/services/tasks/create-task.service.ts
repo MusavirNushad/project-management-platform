@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
 import { TaskPermissionService } from '../permissions/task-permission.service';
+import { RealtimeEventsService } from '../../../../realtime/application/services/realtime-events.service';
 
 import { TASK_REPOSITORY } from '../../../domain/ports/task.repository.port';
 import type { TaskRepositoryPort } from '../../../domain/ports/task.repository.port';
@@ -62,7 +63,8 @@ export class CreateTaskService {
     @Inject(TASK_REPOSITORY)
     private readonly taskRepository: TaskRepositoryPort,
     private readonly taskPermissionService: TaskPermissionService,
-  ) {}
+    private readonly realtimeEventsService: RealtimeEventsService,
+  ) { }
 
   async execute(input: CreateTaskInput): Promise<CreateTaskResult> {
     const workspaceId = WorkspaceId.create(input.workspaceId);
@@ -116,7 +118,23 @@ export class CreateTaskService {
 
     const savedTask = await this.taskRepository.save(task);
 
+    this.realtimeEventsService.emitTaskCreated({
+      taskId: savedTask.getId(),
+      workspaceId: savedTask.getWorkspaceId(),
+      projectId: savedTask.getProjectId(),
+      title: savedTask.getTitle(),
+      status: savedTask.getStatus(),
+      priority: savedTask.getPriority(),
+      assigneeIds: savedTask.getAssignees().map((assignee) => assignee.getUserId()),
+      createdBy: {
+        userId: savedTask.getReporterId(),
+      },
+      createdAt: savedTask.getCreatedAt().toISOString(),
+    });
+
     return this.toResult(savedTask);
+
+
   }
 
   private parseOptionalDate(value?: string | null): Date | null {

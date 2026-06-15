@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { PrismaModule } from '../../shared/infrastructure/database/prisma.module';
 import { IdentityModule } from '../identity/identity.module';
+import { RealtimeModule } from '../realtime/realtime.module';
 
 import { AddProjectMemberService } from './application/services/members/add-project-member.service';
 import { GetProjectMembersService } from './application/services/members/get-project-members.service';
@@ -21,7 +22,7 @@ import { ProjectMemberController } from './presentation/controllers/project-memb
 import { ProjectController } from './presentation/controllers/project.controller';
 
 @Module({
-  imports: [PrismaModule, IdentityModule],
+  imports: [PrismaModule, IdentityModule, RealtimeModule],
   controllers: [ProjectController, ProjectMemberController],
   providers: [
     CreateProjectService,
@@ -41,4 +42,4 @@ import { ProjectController } from './presentation/controllers/project.controller
     },
   ],
 })
-export class ProjectModule {}
+export class ProjectModule { }

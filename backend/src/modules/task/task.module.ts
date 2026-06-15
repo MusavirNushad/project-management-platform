@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../shared/infrastructure/database/prisma.module';
 import { IdentityModule } from '../identity/identity.module';
 import { AccessControlModule } from '../access-control/access-control.module';
+import { RealtimeModule } from '../realtime/realtime.module';
 
 import { CreateTaskService } from './application/services/tasks/create-task.service';
 import { GetProjectTasksService } from './application/services/tasks/get-project-tasks.service';
@@ -25,7 +26,7 @@ import { TaskAssigneeController } from './presentation/controllers/task-assignee
 import { TaskCommentController } from './presentation/controllers/task-comment.controller';
 
 @Module({
-  imports: [PrismaModule, IdentityModule, AccessControlModule],
+  imports: [PrismaModule, IdentityModule, AccessControlModule, RealtimeModule],
   controllers: [TaskController, TaskAssigneeController, TaskCommentController],
   providers: [
     CreateTaskService,
@@ -45,4 +46,4 @@ import { TaskCommentController } from './presentation/controllers/task-comment.c
     },
   ],
 })
-export class TaskModule {}
+export class TaskModule { }

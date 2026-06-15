@@ -1,5 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 
+import { RealtimeEventsService } from '../../../../realtime/application/services/realtime-events.service';
+
 import { PROJECT_REPOSITORY } from '../../../domain/ports/project.repository.port';
 import type { ProjectRepositoryPort } from '../../../domain/ports/project.repository.port';
 
@@ -36,7 +38,8 @@ export class RemoveProjectMemberService {
     @Inject(PROJECT_REPOSITORY)
     private readonly projectRepository: ProjectRepositoryPort,
     private readonly projectMemberPermissionService: ProjectMemberPermissionService,
-  ) {}
+    private readonly realtimeEventsService: RealtimeEventsService,
+  ) { }
 
   async execute(
     input: RemoveProjectMemberInput,
@@ -89,6 +92,16 @@ export class RemoveProjectMemberService {
     }
 
     await this.projectRepository.deleteProjectMemberById(memberId);
+
+    this.realtimeEventsService.emitProjectMemberRemoved({
+      workspaceId: input.workspaceId,
+      projectId: input.projectId,
+      memberId: member.userId,
+      removedBy: {
+        userId: input.actorUserId,
+      },
+      removedAt: new Date().toISOString(),
+    });
 
     return {
       message: 'Project member removed successfully.',

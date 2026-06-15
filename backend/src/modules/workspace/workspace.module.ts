@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { PrismaModule } from '../../shared/infrastructure/database/prisma.module';
 import { IdentityModule } from '../identity/identity.module';
+import { RealtimeModule } from '../realtime/realtime.module';
 
 import { CreateWorkspaceService } from './application/services/workspaces/create-workspace.service';
 import { GetMyWorkspacesService } from './application/services/workspaces/get-my-workspaces.service';
@@ -19,7 +20,7 @@ import { WorkspaceController } from './presentation/controllers/workspace.contro
 import { WorkspaceMemberController } from './presentation/controllers/workspace-member.controller';
 
 @Module({
-  imports: [PrismaModule, IdentityModule],
+  imports: [PrismaModule, IdentityModule, RealtimeModule],
   controllers: [WorkspaceController, WorkspaceMemberController],
   providers: [
     CreateWorkspaceService,
@@ -36,4 +37,4 @@ import { WorkspaceMemberController } from './presentation/controllers/workspace-
     },
   ],
 })
-export class WorkspaceModule {}
+export class WorkspaceModule { }
