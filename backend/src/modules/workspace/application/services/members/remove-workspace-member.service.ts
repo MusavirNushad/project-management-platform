@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 
-import { RealtimeEventsService } from '../../../../realtime/application/services/realtime-events.service';
+import { WorkspaceRealtimeEventsService } from '../workspace-realtime/workspace-realtime-events.service';
 
 import { WORKSPACE_REPOSITORY } from '../../../domain/ports/workspace.repository.port';
 import type { WorkspaceRepositoryPort } from '../../../domain/ports/workspace.repository.port';
@@ -32,7 +32,8 @@ export class RemoveWorkspaceMemberService {
   constructor(
     @Inject(WORKSPACE_REPOSITORY)
     private readonly workspaceRepository: WorkspaceRepositoryPort,
-    private readonly realtimeEventsService: RealtimeEventsService,
+    private readonly workspaceRealtimeEventsService: WorkspaceRealtimeEventsService,
+
   ) { }
 
   async execute(
@@ -69,7 +70,7 @@ export class RemoveWorkspaceMemberService {
 
     await this.workspaceRepository.deleteMemberById(memberId);
 
-    this.realtimeEventsService.emitWorkspaceMemberRemoved({
+    this.workspaceRealtimeEventsService.emitWorkspaceMemberRemoved({
       workspaceId: input.workspaceId,
       memberId: member.userId,
       removedBy: {

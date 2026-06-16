@@ -2,7 +2,10 @@ import { Module } from '@nestjs/common';
 
 import { PrismaModule } from '../../shared/infrastructure/database/prisma.module';
 import { IdentityModule } from '../identity/identity.module';
-import { RealtimeModule } from '../realtime/realtime.module';
+
+import { ProjectRealtimeAccessService } from './application/services/realtime/project-realtime-access.service';
+import { ProjectRealtimeEventsService } from './application/services/realtime/project-realtime-events.service';
+import { ProjectRealtimeGateway } from './presentation/gateways/project-realtime.gateway';
 
 import { AddProjectMemberService } from './application/services/members/add-project-member.service';
 import { GetProjectMembersService } from './application/services/members/get-project-members.service';
@@ -22,13 +25,17 @@ import { ProjectMemberController } from './presentation/controllers/project-memb
 import { ProjectController } from './presentation/controllers/project.controller';
 
 @Module({
-  imports: [PrismaModule, IdentityModule, RealtimeModule],
+  imports: [PrismaModule, IdentityModule],
   controllers: [ProjectController, ProjectMemberController],
   providers: [
     CreateProjectService,
     GetWorkspaceProjectsService,
     GetProjectByIdService,
     UpdateProjectService,
+
+    ProjectRealtimeGateway,
+    ProjectRealtimeAccessService,
+    ProjectRealtimeEventsService,
 
     GetProjectMembersService,
     ProjectMemberPermissionService,

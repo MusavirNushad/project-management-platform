@@ -73,7 +73,7 @@ type PrismaProjectMemberWithRole = Prisma.ProjectMemberGetPayload<{
 
 @Injectable()
 export class PrismaTaskRepository implements TaskRepositoryPort {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async save(task: TaskEntity): Promise<TaskEntity> {
     const savedTask = await this.prisma.$transaction(async (tx) => {
@@ -496,6 +496,33 @@ export class PrismaTaskRepository implements TaskRepositoryPort {
     });
   }
 
+  async canUserAccessTask(taskId: TaskId, userId: UserId): Promise<boolean> {
+    const task = await this.prisma.task.findUnique({
+      where: {
+        id: taskId.value,
+      },
+      select: {
+        projectId: true,
+      },
+    });
+
+    if (!task) {
+      return false;
+    }
+
+    const projectMember = await this.prisma.projectMember.findFirst({
+      where: {
+        projectId: task.projectId,
+        userId: userId.value,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return Boolean(projectMember);
+  }
+
   private toTaskAssigneeDetails(
     assignee: PrismaTaskAssigneeWithDetails,
   ): TaskAssigneeDetails {
@@ -567,3 +594,5 @@ export class PrismaTaskRepository implements TaskRepositoryPort {
     );
   }
 }
+
+

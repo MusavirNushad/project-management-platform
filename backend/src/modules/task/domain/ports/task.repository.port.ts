@@ -117,4 +117,5 @@ export interface TaskRepositoryPort {
   hasCommentReplies(commentId: TaskCommentId): Promise<boolean>;
 
   deleteTaskCommentById(commentId: TaskCommentId): Promise<void>;
+  canUserAccessTask(taskId: TaskId, userId: UserId): Promise<boolean>;
 }

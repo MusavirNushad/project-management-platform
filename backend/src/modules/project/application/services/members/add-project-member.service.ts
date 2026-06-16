@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
-import { RealtimeEventsService } from '../../../../realtime/application/services/realtime-events.service';
+import { ProjectRealtimeEventsService } from '../realtime/project-realtime-events.service';
 
 import { PROJECT_REPOSITORY } from '../../../domain/ports/project.repository.port';
 import type {
@@ -45,7 +45,7 @@ export class AddProjectMemberService {
     @Inject(PROJECT_REPOSITORY)
     private readonly projectRepository: ProjectRepositoryPort,
     private readonly projectMemberPermissionService: ProjectMemberPermissionService,
-    private readonly realtimeEventsService: RealtimeEventsService,
+    private readonly projectRealtimeEventsService: ProjectRealtimeEventsService,
   ) { }
 
   async execute(input: AddProjectMemberInput): Promise<AddProjectMemberResult> {
@@ -138,7 +138,7 @@ export class AddProjectMemberService {
       throw new ProjectMemberNotFoundError();
     }
 
-    this.realtimeEventsService.emitProjectMemberAdded({
+    this.projectRealtimeEventsService.emitProjectMemberAdded({
       workspaceId: input.workspaceId,
       projectId: input.projectId,
       memberId: targetUser.id,

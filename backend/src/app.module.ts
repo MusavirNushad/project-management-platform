@@ -13,8 +13,6 @@ import { TaskModule } from './modules/task/task.module';
 import { SprintModule } from './modules/sprint/sprint.module';
 import { WorklogModule } from './modules/worklog/worklog.module';
 import { ReportModule } from './modules/report/report.module';
-import { RealtimeModule } from './modules/realtime/realtime.module';
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -29,7 +27,7 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
     SprintModule,
     WorklogModule,
     ReportModule,
-    RealtimeModule,
+
   ],
 })
 export class AppModule implements NestModule {

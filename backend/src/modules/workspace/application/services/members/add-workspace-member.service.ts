@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
-import { RealtimeEventsService } from '../../../../realtime/application/services/realtime-events.service';
+import { WorkspaceRealtimeEventsService } from '../workspace-realtime/workspace-realtime-events.service';
 
 import { WORKSPACE_REPOSITORY } from '../../../domain/ports/workspace.repository.port';
 import type {
@@ -39,7 +39,7 @@ export class AddWorkspaceMemberService {
   constructor(
     @Inject(WORKSPACE_REPOSITORY)
     private readonly workspaceRepository: WorkspaceRepositoryPort,
-    private readonly realtimeEventsService: RealtimeEventsService,
+    private readonly workspaceRealtimeEventsService: WorkspaceRealtimeEventsService,
   ) { }
 
   async execute(
@@ -101,7 +101,7 @@ export class AddWorkspaceMemberService {
       throw new WorkspaceMemberNotFoundError();
     }
 
-    this.realtimeEventsService.emitWorkspaceMemberAdded({
+    this.workspaceRealtimeEventsService.emitWorkspaceMemberAdded({
       workspaceId: input.workspaceId,
       memberId: targetUser.id,
       roleName: createdMember.role.name,

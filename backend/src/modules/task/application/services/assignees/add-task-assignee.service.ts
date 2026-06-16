@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
 import { TaskPermissionService } from '../permissions/task-permission.service';
-import { RealtimeEventsService } from '../../../../realtime/application/services/realtime-events.service';
+import { TaskRealtimeEventsService } from '../realtime/task-realtime-events.service';
 
 import { TASK_REPOSITORY } from '../../../domain/ports/task.repository.port';
 import type {
@@ -44,7 +44,7 @@ export class AddTaskAssigneeService {
     @Inject(TASK_REPOSITORY)
     private readonly taskRepository: TaskRepositoryPort,
     private readonly taskPermissionService: TaskPermissionService,
-    private readonly realtimeEventsService: RealtimeEventsService,
+    private readonly taskRealtimeEventsService: TaskRealtimeEventsService,
   ) { }
 
   async execute(input: AddTaskAssigneeInput): Promise<AddTaskAssigneeResult> {
@@ -129,7 +129,7 @@ export class AddTaskAssigneeService {
 
     const savedAssignee = await this.taskRepository.saveTaskAssignee(taskAssignee);
 
-    this.realtimeEventsService.emitTaskAssigned({
+    await this.taskRealtimeEventsService.emitTaskAssigned({
       workspaceId: input.workspaceId,
       projectId: input.projectId,
       taskId: input.taskId,
