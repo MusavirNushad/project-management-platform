@@ -1,10 +1,4 @@
-import {
-    Inject,
-    Logger,
-    UnauthorizedException,
-    UsePipes,
-    ValidationPipe,
-} from '@nestjs/common';
+import { Logger, UsePipes } from '@nestjs/common';
 import {
     ConnectedSocket,
     MessageBody,
@@ -17,39 +11,29 @@ import {
 } from '@nestjs/websockets';
 import type { Server } from 'socket.io';
 
+import { disconnectUnauthorizedSocket } from '../../../../shared/infrastructure/realtime/helpers/disconnect-unauthorized-socket.helper';
+import { ensureAuthenticatedSocket } from '../../../../shared/infrastructure/realtime/helpers/ensure-authenticated-socket.helper';
+import { SocketAuthenticationService } from '../../../../shared/infrastructure/realtime/services/socket-authentication.service';
+import type { AuthenticatedSocket } from '../../../../shared/infrastructure/realtime/types/authenticated-socket.type';
 import {
-    TOKEN_SERVICE,
-    type TokenServicePort,
-} from '../../../identity/application/ports/token-service.port';
+    realtimeGatewayOptions,
+    realtimeValidationPipe,
+} from '../../../../shared/infrastructure/realtime/config/realtime-gateway.config';
+
 import { ProjectRealtimeAccessService } from '../../application/services/realtime/project-realtime-access.service';
 import { ProjectRealtimeEventsService } from '../../application/services/realtime/project-realtime-events.service';
 import { ProjectRealtimeEvent } from '../../application/types/project-realtime-event.types';
 import { ProjectRealtimeRoom } from '../../application/types/project-realtime-room.types';
 import { JoinProjectRoomDto } from '../dtos/requests/join-project-room.dto';
-import type {
-    AuthenticatedProjectSocket,
-    AuthenticatedProjectSocketUser,
-} from '../types/authenticated-project-socket.type';
 
-@UsePipes(
-    new ValidationPipe({
-        whitelist: true,
-        transform: true,
-    }),
-)
-@WebSocketGateway({
-    namespace: '/realtime',
-    cors: {
-        origin: '*',
-    },
-})
+@UsePipes(realtimeValidationPipe)
+@WebSocketGateway(realtimeGatewayOptions)
 export class ProjectRealtimeGateway
     implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
     private readonly logger = new Logger(ProjectRealtimeGateway.name);
 
     constructor(
-        @Inject(TOKEN_SERVICE)
-        private readonly tokenService: TokenServicePort,
+        private readonly socketAuthenticationService: SocketAuthenticationService,
         private readonly projectRealtimeEventsService: ProjectRealtimeEventsService,
         private readonly projectRealtimeAccessService: ProjectRealtimeAccessService,
     ) { }
@@ -59,44 +43,31 @@ export class ProjectRealtimeGateway
         this.logger.log('Project realtime gateway initialized');
     }
 
-    async handleConnection(client: AuthenticatedProjectSocket): Promise<void> {
+    async handleConnection(client: AuthenticatedSocket): Promise<void> {
         try {
-            const token = this.extractToken(client);
+            const user = await this.socketAuthenticationService.authenticate(client);
 
-            const payload = await this.tokenService.verifyAccessToken(token);
-
-            client.data.user = {
-                userId: payload.userId,
-                email: payload.email,
-            };
-
-            await client.join(ProjectRealtimeRoom.user(payload.userId));
+            await client.join(ProjectRealtimeRoom.user(user.userId));
 
             client.emit(ProjectRealtimeEvent.Connected, {
                 message: 'Connected to project realtime server',
-                userId: payload.userId,
+                userId: user.userId,
             });
 
             this.logger.log(
-                `Project socket connected: ${client.id}, user: ${payload.userId}`,
+                `Project socket connected: ${client.id}, user: ${user.userId}`,
             );
         } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-
-            this.logger.warn(
-                `Unauthorized project socket connection: ${client.id}. Reason: ${message}`,
-            );
-
-            client.emit('realtime:error', {
-                message: 'Unauthorized socket connection',
-                reason: message,
+            disconnectUnauthorizedSocket({
+                client,
+                logger: this.logger,
+                context: 'project',
+                error,
             });
-
-            client.disconnect(true);
         }
     }
 
-    handleDisconnect(client: AuthenticatedProjectSocket): void {
+    handleDisconnect(client: AuthenticatedSocket): void {
         const userId = client.data.user?.userId;
 
         this.logger.log(
@@ -107,10 +78,10 @@ export class ProjectRealtimeGateway
 
     @SubscribeMessage('join:project')
     async handleJoinProject(
-        @ConnectedSocket() client: AuthenticatedProjectSocket,
+        @ConnectedSocket() client: AuthenticatedSocket,
         @MessageBody() body: JoinProjectRoomDto,
     ): Promise<{ success: boolean; room: string }> {
-        const user = this.ensureAuthenticated(client);
+        const user = ensureAuthenticatedSocket(client);
 
         const canJoin = await this.projectRealtimeAccessService.canJoinProject({
             userId: user.userId,
@@ -137,10 +108,10 @@ export class ProjectRealtimeGateway
 
     @SubscribeMessage('leave:project')
     async handleLeaveProject(
-        @ConnectedSocket() client: AuthenticatedProjectSocket,
+        @ConnectedSocket() client: AuthenticatedSocket,
         @MessageBody() body: JoinProjectRoomDto,
     ): Promise<{ success: boolean; room: string }> {
-        this.ensureAuthenticated(client);
+        ensureAuthenticatedSocket(client);
 
         const room = ProjectRealtimeRoom.project(body.projectId);
 
@@ -154,34 +125,5 @@ export class ProjectRealtimeGateway
             success: true,
             room,
         };
-    }
-
-    private extractToken(client: AuthenticatedProjectSocket): string {
-        const authToken = client.handshake.auth?.token;
-
-        if (typeof authToken === 'string' && authToken.length > 0) {
-            return authToken;
-        }
-
-        const authorizationHeader = client.handshake.headers.authorization;
-
-        if (
-            typeof authorizationHeader === 'string' &&
-            authorizationHeader.startsWith('Bearer ')
-        ) {
-            return authorizationHeader.slice(7);
-        }
-
-        throw new UnauthorizedException('Missing socket auth token');
-    }
-
-    private ensureAuthenticated(
-        client: AuthenticatedProjectSocket,
-    ): AuthenticatedProjectSocketUser {
-        if (!client.data.user) {
-            throw new WsException('Unauthenticated socket');
-        }
-
-        return client.data.user;
     }
 }

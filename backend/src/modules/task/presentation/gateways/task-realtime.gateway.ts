@@ -1,10 +1,4 @@
-import {
-    Inject,
-    Logger,
-    UnauthorizedException,
-    UsePipes,
-    ValidationPipe,
-} from '@nestjs/common';
+import { Logger, UsePipes } from '@nestjs/common';
 import {
     ConnectedSocket,
     MessageBody,
@@ -17,39 +11,29 @@ import {
 } from '@nestjs/websockets';
 import type { Server } from 'socket.io';
 
+import { disconnectUnauthorizedSocket } from '../../../../shared/infrastructure/realtime/helpers/disconnect-unauthorized-socket.helper';
+import { ensureAuthenticatedSocket } from '../../../../shared/infrastructure/realtime/helpers/ensure-authenticated-socket.helper';
+import { SocketAuthenticationService } from '../../../../shared/infrastructure/realtime/services/socket-authentication.service';
+import type { AuthenticatedSocket } from '../../../../shared/infrastructure/realtime/types/authenticated-socket.type';
 import {
-    TOKEN_SERVICE,
-    type TokenServicePort,
-} from '../../../identity/application/ports/token-service.port';
+    realtimeGatewayOptions,
+    realtimeValidationPipe,
+} from '../../../../shared/infrastructure/realtime/config/realtime-gateway.config';
+
 import { TaskRealtimeAccessService } from '../../application/services/realtime/task-realtime-access.service';
 import { TaskRealtimeEventsService } from '../../application/services/realtime/task-realtime-events.service';
 import { TaskRealtimeEvent } from '../../application/types/task-realtime-event.types';
 import { TaskRealtimeRoom } from '../../application/types/task-realtime-room.types';
 import { JoinTaskRoomDto } from '../dtos/requests/join-task-room.dto';
-import type {
-    AuthenticatedTaskSocket,
-    AuthenticatedTaskSocketUser,
-} from '../types/authenticated-task-socket.type';
 
-@UsePipes(
-    new ValidationPipe({
-        whitelist: true,
-        transform: true,
-    }),
-)
-@WebSocketGateway({
-    namespace: '/realtime',
-    cors: {
-        origin: '*',
-    },
-})
+@UsePipes(realtimeValidationPipe)
+@WebSocketGateway(realtimeGatewayOptions)
 export class TaskRealtimeGateway
     implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
     private readonly logger = new Logger(TaskRealtimeGateway.name);
 
     constructor(
-        @Inject(TOKEN_SERVICE)
-        private readonly tokenService: TokenServicePort,
+        private readonly socketAuthenticationService: SocketAuthenticationService,
         private readonly taskRealtimeEventsService: TaskRealtimeEventsService,
         private readonly taskRealtimeAccessService: TaskRealtimeAccessService,
     ) { }
@@ -59,44 +43,31 @@ export class TaskRealtimeGateway
         this.logger.log('Task realtime gateway initialized');
     }
 
-    async handleConnection(client: AuthenticatedTaskSocket): Promise<void> {
+    async handleConnection(client: AuthenticatedSocket): Promise<void> {
         try {
-            const token = this.extractToken(client);
+            const user = await this.socketAuthenticationService.authenticate(client);
 
-            const payload = await this.tokenService.verifyAccessToken(token);
-
-            client.data.user = {
-                userId: payload.userId,
-                email: payload.email,
-            };
-
-            await client.join(TaskRealtimeRoom.user(payload.userId));
+            await client.join(TaskRealtimeRoom.user(user.userId));
 
             client.emit(TaskRealtimeEvent.Connected, {
                 message: 'Connected to task realtime server',
-                userId: payload.userId,
+                userId: user.userId,
             });
 
             this.logger.log(
-                `Task socket connected: ${client.id}, user: ${payload.userId}`,
+                `Task socket connected: ${client.id}, user: ${user.userId}`,
             );
         } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-
-            this.logger.warn(
-                `Unauthorized task socket connection: ${client.id}. Reason: ${message}`,
-            );
-
-            client.emit('realtime:error', {
-                message: 'Unauthorized socket connection',
-                reason: message,
+            disconnectUnauthorizedSocket({
+                client,
+                logger: this.logger,
+                context: 'task',
+                error,
             });
-
-            client.disconnect(true);
         }
     }
 
-    handleDisconnect(client: AuthenticatedTaskSocket): void {
+    handleDisconnect(client: AuthenticatedSocket): void {
         const userId = client.data.user?.userId;
 
         this.logger.log(
@@ -107,10 +78,10 @@ export class TaskRealtimeGateway
 
     @SubscribeMessage('join:task')
     async handleJoinTask(
-        @ConnectedSocket() client: AuthenticatedTaskSocket,
+        @ConnectedSocket() client: AuthenticatedSocket,
         @MessageBody() body: JoinTaskRoomDto,
     ): Promise<{ success: boolean; room: string }> {
-        const user = this.ensureAuthenticated(client);
+        const user = ensureAuthenticatedSocket(client);
 
         const canJoin = await this.taskRealtimeAccessService.canJoinTask({
             userId: user.userId,
@@ -137,10 +108,10 @@ export class TaskRealtimeGateway
 
     @SubscribeMessage('leave:task')
     async handleLeaveTask(
-        @ConnectedSocket() client: AuthenticatedTaskSocket,
+        @ConnectedSocket() client: AuthenticatedSocket,
         @MessageBody() body: JoinTaskRoomDto,
     ): Promise<{ success: boolean; room: string }> {
-        this.ensureAuthenticated(client);
+        ensureAuthenticatedSocket(client);
 
         const room = TaskRealtimeRoom.task(body.taskId);
 
@@ -154,34 +125,5 @@ export class TaskRealtimeGateway
             success: true,
             room,
         };
-    }
-
-    private extractToken(client: AuthenticatedTaskSocket): string {
-        const authToken = client.handshake.auth?.token;
-
-        if (typeof authToken === 'string' && authToken.length > 0) {
-            return authToken;
-        }
-
-        const authorizationHeader = client.handshake.headers.authorization;
-
-        if (
-            typeof authorizationHeader === 'string' &&
-            authorizationHeader.startsWith('Bearer ')
-        ) {
-            return authorizationHeader.slice(7);
-        }
-
-        throw new UnauthorizedException('Missing socket auth token');
-    }
-
-    private ensureAuthenticated(
-        client: AuthenticatedTaskSocket,
-    ): AuthenticatedTaskSocketUser {
-        if (!client.data.user) {
-            throw new WsException('Unauthenticated socket');
-        }
-
-        return client.data.user;
     }
 }

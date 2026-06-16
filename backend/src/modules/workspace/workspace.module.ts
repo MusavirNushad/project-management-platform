@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 
 import { PrismaModule } from '../../shared/infrastructure/database/prisma.module';
+import { SocketAuthenticationService } from '../../shared/infrastructure/realtime/services/socket-authentication.service';
+
+
 import { IdentityModule } from '../identity/identity.module';
 
 import { CreateWorkspaceService } from './application/services/workspaces/create-workspace.service';
@@ -27,6 +30,7 @@ import { WorkspaceRealtimeGateway } from './presentation/gateways/workspace-real
   imports: [PrismaModule, IdentityModule],
   controllers: [WorkspaceController, WorkspaceMemberController],
   providers: [
+    SocketAuthenticationService,
     CreateWorkspaceService,
     GetMyWorkspacesService,
     GetWorkspaceByIdService,

@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 
 import { PrismaModule } from '../../shared/infrastructure/database/prisma.module';
+import { SocketAuthenticationService } from '../../shared/infrastructure/realtime/services/socket-authentication.service';
+
 import { IdentityModule } from '../identity/identity.module';
 
 import { ProjectRealtimeAccessService } from './application/services/realtime/project-realtime-access.service';
@@ -28,6 +30,7 @@ import { ProjectController } from './presentation/controllers/project.controller
   imports: [PrismaModule, IdentityModule],
   controllers: [ProjectController, ProjectMemberController],
   providers: [
+    SocketAuthenticationService,
     CreateProjectService,
     GetWorkspaceProjectsService,
     GetProjectByIdService,

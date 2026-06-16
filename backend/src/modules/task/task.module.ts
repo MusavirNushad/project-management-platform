@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 
 import { PrismaModule } from '../../shared/infrastructure/database/prisma.module';
+import { SocketAuthenticationService } from '../../shared/infrastructure/realtime/services/socket-authentication.service';
+
 import { IdentityModule } from '../identity/identity.module';
 import { AccessControlModule } from '../access-control/access-control.module';
 
@@ -32,7 +34,7 @@ import { TaskCommentController } from './presentation/controllers/task-comment.c
   imports: [PrismaModule, IdentityModule, AccessControlModule],
   controllers: [TaskController, TaskAssigneeController, TaskCommentController],
   providers: [
-
+    SocketAuthenticationService,
     TaskRealtimeGateway,
     TaskRealtimeEventsService,
     TaskRealtimeAccessService,
