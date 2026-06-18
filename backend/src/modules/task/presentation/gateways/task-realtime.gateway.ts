@@ -1,4 +1,4 @@
-import { Logger, UsePipes } from '@nestjs/common';
+import { Logger, UseGuards, UsePipes } from '@nestjs/common';
 import {
     ConnectedSocket,
     MessageBody,
@@ -7,12 +7,10 @@ import {
     OnGatewayInit,
     SubscribeMessage,
     WebSocketGateway,
-    WsException,
 } from '@nestjs/websockets';
 import type { Server } from 'socket.io';
 
 import { disconnectUnauthorizedSocket } from '../../../../shared/infrastructure/realtime/helpers/disconnect-unauthorized-socket.helper';
-import { ensureAuthenticatedSocket } from '../../../../shared/infrastructure/realtime/helpers/ensure-authenticated-socket.helper';
 import { SocketAuthenticationService } from '../../../../shared/infrastructure/realtime/services/socket-authentication.service';
 import type { AuthenticatedSocket } from '../../../../shared/infrastructure/realtime/types/authenticated-socket.type';
 import {
@@ -20,10 +18,13 @@ import {
     realtimeValidationPipe,
 } from '../../../../shared/infrastructure/realtime/config/realtime-gateway.config';
 
-import { TaskRealtimeAccessService } from '../../application/services/realtime/task-realtime-access.service';
-import { TaskRealtimeEventsService } from '../../application/services/realtime/task-realtime-events.service';
+import { TaskRealtimeEventsService } from '../../application/services/task-realtime/task-realtime-events.service';
 import { TaskRealtimeEvent } from '../../application/types/task-realtime-event.types';
 import { TaskRealtimeRoom } from '../../application/types/task-realtime-room.types';
+
+import { TaskRealtimeAuthenticatedGuard } from '../guards/task-realtime-authenticated.guard';
+import { TaskRealtimeTaskAccessGuard } from '../guards/task-realtime-task-access.guard';
+
 import { JoinTaskRoomDto } from '../dtos/requests/join-task-room.dto';
 
 @UsePipes(realtimeValidationPipe)
@@ -35,7 +36,6 @@ export class TaskRealtimeGateway
     constructor(
         private readonly socketAuthenticationService: SocketAuthenticationService,
         private readonly taskRealtimeEventsService: TaskRealtimeEventsService,
-        private readonly taskRealtimeAccessService: TaskRealtimeAccessService,
     ) { }
 
     afterInit(server: Server): void {
@@ -76,22 +76,12 @@ export class TaskRealtimeGateway
         );
     }
 
+    @UseGuards(TaskRealtimeAuthenticatedGuard, TaskRealtimeTaskAccessGuard)
     @SubscribeMessage('join:task')
     async handleJoinTask(
         @ConnectedSocket() client: AuthenticatedSocket,
         @MessageBody() body: JoinTaskRoomDto,
     ): Promise<{ success: boolean; room: string }> {
-        const user = ensureAuthenticatedSocket(client);
-
-        const canJoin = await this.taskRealtimeAccessService.canJoinTask({
-            userId: user.userId,
-            taskId: body.taskId,
-        });
-
-        if (!canJoin) {
-            throw new WsException('You are not allowed to join this task room.');
-        }
-
         const room = TaskRealtimeRoom.task(body.taskId);
 
         await client.join(room);
@@ -106,13 +96,12 @@ export class TaskRealtimeGateway
         };
     }
 
+    @UseGuards(TaskRealtimeAuthenticatedGuard)
     @SubscribeMessage('leave:task')
     async handleLeaveTask(
         @ConnectedSocket() client: AuthenticatedSocket,
         @MessageBody() body: JoinTaskRoomDto,
     ): Promise<{ success: boolean; room: string }> {
-        ensureAuthenticatedSocket(client);
-
         const room = TaskRealtimeRoom.task(body.taskId);
 
         await client.leave(room);
@@ -127,3 +116,4 @@ export class TaskRealtimeGateway
         };
     }
 }
+

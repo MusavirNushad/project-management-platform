@@ -13,6 +13,9 @@ import { GetMyWorkspacesService } from '../../application/services/workspaces/ge
 import { GetWorkspaceByIdService } from '../../application/services/workspaces/get-workspace-by-id.service';
 import { UpdateWorkspaceService } from '../../application/services/workspaces/update-workspace.service';
 
+import { RequireRoles } from '../../../access-control/presentation/decorators/require-roles.decorator';
+import { AccessControlGuard } from '../../../access-control/presentation/guards/access-control.guard';
+
 import { CurrentUser } from '../../../identity/infrastructure/security/current-user.decorator';
 import { JwtAuthGuard } from '../../../identity/infrastructure/security/jwt-auth.guard';
 
@@ -29,7 +32,7 @@ export class WorkspaceController {
     private readonly getMyWorkspacesService: GetMyWorkspacesService,
     private readonly getWorkspaceByIdService: GetWorkspaceByIdService,
     private readonly updateWorkspaceService: UpdateWorkspaceService,
-  ) {}
+  ) { }
 
   @UseGuards(JwtAuthGuard)
   @Post()
@@ -58,30 +61,34 @@ export class WorkspaceController {
     return WorkspaceListResponseDto.fromResult(result);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get(':id')
+  @UseGuards(JwtAuthGuard, AccessControlGuard)
+  @RequireRoles({
+    scope: 'workspace',
+    roles: ['OWNER', 'ADMIN', 'MEMBER'],
+  })
+  @Get(':workspaceId')
   async getWorkspaceById(
-    @CurrentUser('userId') userId: string,
-    @Param('id') workspaceId: string,
+    @Param('workspaceId') workspaceId: string,
   ): Promise<WorkspaceResponseDto> {
     const result = await this.getWorkspaceByIdService.execute({
       workspaceId,
-      userId,
     });
 
     return WorkspaceResponseDto.fromResult(result);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Patch(':id')
+  @UseGuards(JwtAuthGuard, AccessControlGuard)
+  @RequireRoles({
+    scope: 'workspace',
+    roles: ['OWNER'],
+  })
+  @Patch(':workspaceId')
   async updateWorkspace(
-    @CurrentUser('userId') userId: string,
-    @Param('id') workspaceId: string,
+    @Param('workspaceId') workspaceId: string,
     @Body() dto: UpdateWorkspaceRequestDto,
   ): Promise<WorkspaceResponseDto> {
     const result = await this.updateWorkspaceService.execute({
       workspaceId,
-      userId,
       name: dto.name,
       description: dto.description,
     });

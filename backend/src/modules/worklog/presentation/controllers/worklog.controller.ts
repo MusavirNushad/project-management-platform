@@ -1,29 +1,34 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
   Post,
-  Delete,
   UseGuards,
 } from '@nestjs/common';
 
 import { CreateWorklogService } from '../../application/services/worklogs/create-worklog.service';
+import { DeleteWorklogService } from '../../application/services/worklogs/delete-worklog.service';
 import { GetTaskWorklogsService } from '../../application/services/worklogs/get-task-worklogs.service';
 import { GetWorklogByIdService } from '../../application/services/worklogs/get-worklog-by-id.service';
 import { UpdateWorklogService } from '../../application/services/worklogs/update-worklog.service';
-import { DeleteWorklogService } from '../../application/services/worklogs/delete-worklog.service';
+
+import { RequireRoles } from '../../../access-control/presentation/decorators/require-roles.decorator';
+import { AccessControlGuard } from '../../../access-control/presentation/guards/access-control.guard';
 
 import { CurrentUser } from '../../../identity/infrastructure/security/current-user.decorator';
 import { JwtAuthGuard } from '../../../identity/infrastructure/security/jwt-auth.guard';
 
+import { WorklogOwnerOrProjectAdminGuard } from '../guards/worklog-owner-or-project-admin.guard';
+
 import { CreateWorklogRequestDto } from '../dtos/requests/create-worklog.request.dto';
 import { UpdateWorklogRequestDto } from '../dtos/requests/update-worklog.request.dto';
 
+import { DeleteWorklogResponseDto } from '../dtos/responses/delete-worklog.response.dto';
 import { WorklogListResponseDto } from '../dtos/responses/worklog-list.response.dto';
 import { WorklogResponseDto } from '../dtos/responses/worklog.response.dto';
-import { DeleteWorklogResponseDto } from '../dtos/responses/delete-worklog.response.dto';
 
 @Controller(
   'workspaces/:workspaceId/projects/:projectId/tasks/:taskId/worklogs',
@@ -35,9 +40,14 @@ export class WorklogController {
     private readonly getWorklogByIdService: GetWorklogByIdService,
     private readonly updateWorklogService: UpdateWorklogService,
     private readonly deleteWorklogService: DeleteWorklogService,
-  ) {}
+  ) { }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AccessControlGuard)
+  @RequireRoles({
+    scope: 'project',
+    roles: ['ADMIN', 'MEMBER'],
+    allowWorkspaceOwner: true,
+  })
   @Post()
   async createWorklog(
     @CurrentUser('userId') userId: string,
@@ -59,10 +69,14 @@ export class WorklogController {
     return WorklogResponseDto.fromResult(result);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AccessControlGuard)
+  @RequireRoles({
+    scope: 'project',
+    roles: ['ADMIN', 'MEMBER'],
+    allowWorkspaceOwner: true,
+  })
   @Get()
   async getTaskWorklogs(
-    @CurrentUser('userId') userId: string,
     @Param('workspaceId') workspaceId: string,
     @Param('projectId') projectId: string,
     @Param('taskId') taskId: string,
@@ -71,16 +85,19 @@ export class WorklogController {
       workspaceId,
       projectId,
       taskId,
-      userId,
     });
 
     return WorklogListResponseDto.fromResult(result);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AccessControlGuard)
+  @RequireRoles({
+    scope: 'project',
+    roles: ['ADMIN', 'MEMBER'],
+    allowWorkspaceOwner: true,
+  })
   @Get(':worklogId')
   async getWorklogById(
-    @CurrentUser('userId') userId: string,
     @Param('workspaceId') workspaceId: string,
     @Param('projectId') projectId: string,
     @Param('taskId') taskId: string,
@@ -91,16 +108,14 @@ export class WorklogController {
       projectId,
       taskId,
       worklogId,
-      userId,
     });
 
     return WorklogResponseDto.fromResult(result);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, WorklogOwnerOrProjectAdminGuard)
   @Patch(':worklogId')
   async updateWorklog(
-    @CurrentUser('userId') userId: string,
     @Param('workspaceId') workspaceId: string,
     @Param('projectId') projectId: string,
     @Param('taskId') taskId: string,
@@ -112,7 +127,6 @@ export class WorklogController {
       projectId,
       taskId,
       worklogId,
-      userId,
       startedAt: dto.startedAt,
       endedAt: dto.endedAt,
       description: dto.description,
@@ -121,10 +135,9 @@ export class WorklogController {
     return WorklogResponseDto.fromResult(result);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, WorklogOwnerOrProjectAdminGuard)
   @Delete(':worklogId')
   async deleteWorklog(
-    @CurrentUser('userId') userId: string,
     @Param('workspaceId') workspaceId: string,
     @Param('projectId') projectId: string,
     @Param('taskId') taskId: string,
@@ -135,7 +148,6 @@ export class WorklogController {
       projectId,
       taskId,
       worklogId,
-      userId,
     });
 
     return DeleteWorklogResponseDto.fromResult(result);

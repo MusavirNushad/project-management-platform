@@ -1,8 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
-import { TaskPermissionService } from '../permissions/task-permission.service';
-import { TaskRealtimeEventsService } from '../realtime/task-realtime-events.service';
+import { TaskRealtimeEventsService } from '../task-realtime/task-realtime-events.service';
 
 import { TASK_REPOSITORY } from '../../../domain/ports/task.repository.port';
 import type {
@@ -13,7 +12,6 @@ import type {
 import { TaskAssigneeEntity } from '../../../domain/entities/task-assignee.entity';
 
 import {
-  TaskAccessDeniedError,
   TaskAssigneeAlreadyExistsError,
   TaskAssigneeUserNotFoundError,
   TaskAssigneeUserNotProjectMemberError,
@@ -43,7 +41,6 @@ export class AddTaskAssigneeService {
   constructor(
     @Inject(TASK_REPOSITORY)
     private readonly taskRepository: TaskRepositoryPort,
-    private readonly taskPermissionService: TaskPermissionService,
     private readonly taskRealtimeEventsService: TaskRealtimeEventsService,
   ) { }
 
@@ -80,17 +77,7 @@ export class AddTaskAssigneeService {
       throw new TaskNotFoundError();
     }
 
-    const canManageTaskAssignees =
-      await this.taskPermissionService.canManageTaskAssignees({
-        workspaceId,
-        projectId,
-        userId: actorUserId,
-        task,
-      });
 
-    if (!canManageTaskAssignees) {
-      throw new TaskAccessDeniedError();
-    }
 
     const targetUser = await this.taskRepository.findUserById(targetUserId);
 

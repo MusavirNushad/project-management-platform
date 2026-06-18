@@ -4,12 +4,10 @@ import { WORKSPACE_REPOSITORY } from '../../../domain/ports/workspace.repository
 import type { WorkspaceRepositoryPort } from '../../../domain/ports/workspace.repository.port';
 
 import {
-  WorkspaceAccessDeniedError,
   WorkspaceAlreadyExistsError,
   WorkspaceNotFoundError,
 } from '../../../domain/errors/workspace-domain.errors';
 
-import { UserId } from '../../../domain/value-objects/user-id.vo';
 import { WorkspaceDescription } from '../../../domain/value-objects/workspace-description.vo';
 import { WorkspaceId } from '../../../domain/value-objects/workspace-id.vo';
 import { WorkspaceName } from '../../../domain/value-objects/workspace-name.vo';
@@ -19,7 +17,6 @@ const MaxSlugGenerationAttempts = 10;
 
 export type UpdateWorkspaceInput = {
   workspaceId: string;
-  userId: string;
   name?: string;
   description?: string | null;
 };
@@ -39,20 +36,15 @@ export class UpdateWorkspaceService {
   constructor(
     @Inject(WORKSPACE_REPOSITORY)
     private readonly workspaceRepository: WorkspaceRepositoryPort,
-  ) {}
+  ) { }
 
   async execute(input: UpdateWorkspaceInput): Promise<UpdateWorkspaceResult> {
     const workspaceId = WorkspaceId.create(input.workspaceId);
-    const userId = UserId.create(input.userId);
 
     const workspace = await this.workspaceRepository.findById(workspaceId);
 
     if (!workspace) {
       throw new WorkspaceNotFoundError();
-    }
-
-    if (!workspace.isOwnedBy(userId)) {
-      throw new WorkspaceAccessDeniedError();
     }
 
     const shouldUpdateName = input.name !== undefined;

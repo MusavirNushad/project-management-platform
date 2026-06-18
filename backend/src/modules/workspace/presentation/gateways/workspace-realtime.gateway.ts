@@ -1,4 +1,4 @@
-import { Logger, UsePipes } from '@nestjs/common';
+import { Logger, UseGuards, UsePipes } from '@nestjs/common';
 import {
     ConnectedSocket,
     MessageBody,
@@ -7,12 +7,10 @@ import {
     OnGatewayInit,
     SubscribeMessage,
     WebSocketGateway,
-    WsException,
 } from '@nestjs/websockets';
 import type { Server } from 'socket.io';
 
 import { disconnectUnauthorizedSocket } from '../../../../shared/infrastructure/realtime/helpers/disconnect-unauthorized-socket.helper';
-import { ensureAuthenticatedSocket } from '../../../../shared/infrastructure/realtime/helpers/ensure-authenticated-socket.helper';
 import { SocketAuthenticationService } from '../../../../shared/infrastructure/realtime/services/socket-authentication.service';
 import type { AuthenticatedSocket } from '../../../../shared/infrastructure/realtime/types/authenticated-socket.type';
 import {
@@ -20,10 +18,13 @@ import {
     realtimeValidationPipe,
 } from '../../../../shared/infrastructure/realtime/config/realtime-gateway.config';
 
-import { WorkspaceRealtimeAccessService } from '../../application/services/workspace-realtime/workspace-realtime-access.service';
 import { WorkspaceRealtimeEventsService } from '../../application/services/workspace-realtime/workspace-realtime-events.service';
 import { WorkspaceRealtimeEvent } from '../../application/types/workspace-realtime-event.types';
 import { WorkspaceRealtimeRoom } from '../../application/types/workspace-realtime-room.types';
+
+import { WorkspaceRealtimeAccessGuard } from '../guards/workspace-realtime-access.guard';
+import { WorkspaceRealtimeAuthenticatedGuard } from '../guards/workspace-realtime-authenticated.guard';
+
 import { JoinWorkspaceRoomDto } from '../dtos/requests/join-workspace-room.dto';
 
 @UsePipes(realtimeValidationPipe)
@@ -35,7 +36,6 @@ export class WorkspaceRealtimeGateway
     constructor(
         private readonly socketAuthenticationService: SocketAuthenticationService,
         private readonly workspaceRealtimeEventsService: WorkspaceRealtimeEventsService,
-        private readonly workspaceRealtimeAccessService: WorkspaceRealtimeAccessService,
     ) { }
 
     afterInit(server: Server): void {
@@ -76,23 +76,12 @@ export class WorkspaceRealtimeGateway
         );
     }
 
+    @UseGuards(WorkspaceRealtimeAuthenticatedGuard, WorkspaceRealtimeAccessGuard)
     @SubscribeMessage('join:workspace')
     async handleJoinWorkspace(
         @ConnectedSocket() client: AuthenticatedSocket,
         @MessageBody() body: JoinWorkspaceRoomDto,
     ): Promise<{ success: boolean; room: string }> {
-        const user = ensureAuthenticatedSocket(client);
-
-        const canJoin =
-            await this.workspaceRealtimeAccessService.canJoinWorkspace({
-                userId: user.userId,
-                workspaceId: body.workspaceId,
-            });
-
-        if (!canJoin) {
-            throw new WsException('You are not allowed to join this workspace room.');
-        }
-
         const room = WorkspaceRealtimeRoom.workspace(body.workspaceId);
 
         await client.join(room);
@@ -107,13 +96,12 @@ export class WorkspaceRealtimeGateway
         };
     }
 
+    @UseGuards(WorkspaceRealtimeAuthenticatedGuard)
     @SubscribeMessage('leave:workspace')
     async handleLeaveWorkspace(
         @ConnectedSocket() client: AuthenticatedSocket,
         @MessageBody() body: JoinWorkspaceRoomDto,
     ): Promise<{ success: boolean; room: string }> {
-        ensureAuthenticatedSocket(client);
-
         const room = WorkspaceRealtimeRoom.workspace(body.workspaceId);
 
         await client.leave(room);

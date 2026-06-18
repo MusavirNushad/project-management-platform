@@ -1,6 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
 
-import { TaskPermissionService } from '../permissions/task-permission.service';
 
 import { TASK_REPOSITORY } from '../../../domain/ports/task.repository.port';
 import type { TaskRepositoryPort } from '../../../domain/ports/task.repository.port';
@@ -13,7 +12,6 @@ import {
 
 import {
   InvalidTaskDateRangeError,
-  TaskAccessDeniedError,
   TaskNotFoundError,
   TaskProjectNotFoundError,
   TaskWorkspaceNotFoundError,
@@ -23,14 +21,12 @@ import { ProjectId } from '../../../domain/value-objects/project-id.vo';
 import { TaskDescription } from '../../../domain/value-objects/task-description.vo';
 import { TaskId } from '../../../domain/value-objects/task-id.vo';
 import { TaskTitle } from '../../../domain/value-objects/task-title.vo';
-import { UserId } from '../../../domain/value-objects/user-id.vo';
 import { WorkspaceId } from '../../../domain/value-objects/workspace-id.vo';
 
 export type UpdateTaskInput = {
   workspaceId: string;
   projectId: string;
   taskId: string;
-  userId: string;
   title?: string;
   description?: string | null;
   status?: TaskStatus;
@@ -63,14 +59,12 @@ export class UpdateTaskService {
   constructor(
     @Inject(TASK_REPOSITORY)
     private readonly taskRepository: TaskRepositoryPort,
-    private readonly taskPermissionService: TaskPermissionService,
-  ) {}
+  ) { }
 
   async execute(input: UpdateTaskInput): Promise<UpdateTaskResult> {
     const workspaceId = WorkspaceId.create(input.workspaceId);
     const projectId = ProjectId.create(input.projectId);
     const taskId = TaskId.create(input.taskId);
-    const userId = UserId.create(input.userId);
 
     const workspaceExists =
       await this.taskRepository.workspaceExists(workspaceId);
@@ -98,16 +92,7 @@ export class UpdateTaskService {
       throw new TaskNotFoundError();
     }
 
-    const canUpdateTask = await this.taskPermissionService.canUpdateTask({
-      workspaceId,
-      projectId,
-      userId,
-      task,
-    });
 
-    if (!canUpdateTask) {
-      throw new TaskAccessDeniedError();
-    }
 
     const title =
       input.title !== undefined ? TaskTitle.create(input.title) : undefined;

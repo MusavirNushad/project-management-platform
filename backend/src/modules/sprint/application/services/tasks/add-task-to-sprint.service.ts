@@ -1,8 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
-import { SprintPermissionService } from '../permissions/sprint-permission.service';
-
 import { SPRINT_REPOSITORY } from '../../../domain/ports/sprint.repository.port';
 import type {
   SprintRepositoryPort,
@@ -15,7 +13,6 @@ import {
   InvalidSprintTaskPositionError,
   SprintCannotAcceptTasksError,
   SprintNotFoundError,
-  SprintProjectAccessDeniedError,
   SprintProjectNotFoundError,
   SprintTaskReferenceNotFoundError,
   SprintWorkspaceNotFoundError,
@@ -26,7 +23,6 @@ import { ProjectId } from '../../../domain/value-objects/project-id.vo';
 import { SprintId } from '../../../domain/value-objects/sprint-id.vo';
 import { SprintTaskId } from '../../../domain/value-objects/sprint-task-id.vo';
 import { TaskId } from '../../../domain/value-objects/task-id.vo';
-import { UserId } from '../../../domain/value-objects/user-id.vo';
 import { WorkspaceId } from '../../../domain/value-objects/workspace-id.vo';
 
 export type AddTaskToSprintInput = {
@@ -34,7 +30,6 @@ export type AddTaskToSprintInput = {
   projectId: string;
   sprintId: string;
   taskId: string;
-  userId: string;
   position?: number | null;
 };
 
@@ -45,15 +40,13 @@ export class AddTaskToSprintService {
   constructor(
     @Inject(SPRINT_REPOSITORY)
     private readonly sprintRepository: SprintRepositoryPort,
-    private readonly sprintPermissionService: SprintPermissionService,
-  ) {}
+  ) { }
 
   async execute(input: AddTaskToSprintInput): Promise<AddTaskToSprintResult> {
     const workspaceId = WorkspaceId.create(input.workspaceId);
     const projectId = ProjectId.create(input.projectId);
     const sprintId = SprintId.create(input.sprintId);
     const taskId = TaskId.create(input.taskId);
-    const userId = UserId.create(input.userId);
 
     const position = this.normalizePosition(input.position);
 
@@ -87,17 +80,6 @@ export class AddTaskToSprintService {
       sprint.getStatus() === 'CANCELLED'
     ) {
       throw new SprintCannotAcceptTasksError();
-    }
-
-    const canManageSprints =
-      await this.sprintPermissionService.canManageSprints({
-        workspaceId,
-        projectId,
-        userId,
-      });
-
-    if (!canManageSprints) {
-      throw new SprintProjectAccessDeniedError();
     }
 
     const task = await this.sprintRepository.findTaskByProjectAndId(

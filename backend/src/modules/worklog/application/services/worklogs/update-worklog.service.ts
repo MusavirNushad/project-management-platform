@@ -1,7 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
 
-import { WorklogPermissionService } from '../permissions/worklog-permission.service';
-
 import { WORKLOG_REPOSITORY } from '../../../domain/ports/worklog.repository.port';
 import type {
   WorklogDetails,
@@ -12,7 +10,6 @@ import { WorklogEntity } from '../../../domain/entities/worklog.entity';
 
 import {
   InvalidWorklogDateRangeError,
-  WorklogAccessDeniedError,
   WorklogNotFoundError,
   WorklogProjectNotFoundError,
   WorklogTaskMismatchError,
@@ -32,7 +29,6 @@ export type UpdateWorklogInput = {
   projectId: string;
   taskId: string;
   worklogId: string;
-  userId: string;
   startedAt?: string;
   endedAt?: string | null;
   description?: string | null;
@@ -45,15 +41,13 @@ export class UpdateWorklogService {
   constructor(
     @Inject(WORKLOG_REPOSITORY)
     private readonly worklogRepository: WorklogRepositoryPort,
-    private readonly worklogPermissionService: WorklogPermissionService,
-  ) {}
+  ) { }
 
   async execute(input: UpdateWorklogInput): Promise<UpdateWorklogResult> {
     const workspaceId = WorkspaceId.create(input.workspaceId);
     const projectId = ProjectId.create(input.projectId);
     const taskId = TaskId.create(input.taskId);
     const worklogId = WorklogId.create(input.worklogId);
-    const userId = UserId.create(input.userId);
 
     const workspaceExists =
       await this.worklogRepository.workspaceExists(workspaceId);
@@ -91,23 +85,9 @@ export class UpdateWorklogService {
       throw new WorklogTaskMismatchError();
     }
 
-    const worklogUserId = UserId.create(existingWorklog.userId);
-
-    const canUpdateWorklog =
-      await this.worklogPermissionService.canUpdateWorklog({
-        workspaceId,
-        projectId,
-        userId,
-        worklogUserId,
-      });
-
-    if (!canUpdateWorklog) {
-      throw new WorklogAccessDeniedError();
-    }
-
     const worklog = WorklogEntity.restore({
       id: WorklogId.create(existingWorklog.id),
-      userId: worklogUserId,
+      userId: UserId.create(existingWorklog.userId),
       projectId: ProjectId.create(existingWorklog.projectId),
       taskId: TaskId.create(existingWorklog.taskId),
       startedAt: existingWorklog.startedAt,

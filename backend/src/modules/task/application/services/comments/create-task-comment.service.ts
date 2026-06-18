@@ -1,7 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
-import { TaskPermissionService } from '../permissions/task-permission.service';
 
 import { TASK_REPOSITORY } from '../../../domain/ports/task.repository.port';
 import type {
@@ -12,7 +11,6 @@ import type {
 import { TaskCommentEntity } from '../../../domain/entities/task-comment.entity';
 
 import {
-  TaskAccessDeniedError,
   TaskCommentTaskMismatchError,
   TaskNotFoundError,
   TaskProjectNotFoundError,
@@ -42,8 +40,7 @@ export class CreateTaskCommentService {
   constructor(
     @Inject(TASK_REPOSITORY)
     private readonly taskRepository: TaskRepositoryPort,
-    private readonly taskPermissionService: TaskPermissionService,
-  ) {}
+  ) { }
 
   async execute(
     input: CreateTaskCommentInput,
@@ -81,16 +78,6 @@ export class CreateTaskCommentService {
       throw new TaskNotFoundError();
     }
 
-    const canCreateTaskComment =
-      await this.taskPermissionService.canCreateTaskComment({
-        workspaceId,
-        projectId,
-        userId: authorId,
-      });
-
-    if (!canCreateTaskComment) {
-      throw new TaskAccessDeniedError();
-    }
 
     const parentCommentId = input.parentCommentId
       ? TaskCommentId.create(input.parentCommentId)

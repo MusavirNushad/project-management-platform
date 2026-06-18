@@ -29,7 +29,6 @@ export type UpdateTaskCommentInput = {
   projectId: string;
   taskId: string;
   commentId: string;
-  userId: string;
   body: string;
 };
 
@@ -40,7 +39,7 @@ export class UpdateTaskCommentService {
   constructor(
     @Inject(TASK_REPOSITORY)
     private readonly taskRepository: TaskRepositoryPort,
-  ) {}
+  ) { }
 
   async execute(
     input: UpdateTaskCommentInput,
@@ -49,7 +48,6 @@ export class UpdateTaskCommentService {
     const projectId = ProjectId.create(input.projectId);
     const taskId = TaskId.create(input.taskId);
     const commentId = TaskCommentId.create(input.commentId);
-    const userId = UserId.create(input.userId);
 
     const body = TaskCommentBody.create(input.body);
 
@@ -90,9 +88,6 @@ export class UpdateTaskCommentService {
       throw new TaskCommentTaskMismatchError();
     }
 
-    if (existingComment.authorId !== userId.value) {
-      throw new TaskCommentAccessDeniedError();
-    }
 
     const comment = TaskCommentEntity.restore({
       id: TaskCommentId.create(existingComment.id),

@@ -6,7 +6,6 @@ import { WORKSPACE_REPOSITORY } from '../../../domain/ports/workspace.repository
 import type { WorkspaceRepositoryPort } from '../../../domain/ports/workspace.repository.port';
 
 import {
-  WorkspaceAccessDeniedError,
   WorkspaceMemberNotFoundError,
   WorkspaceMemberWorkspaceMismatchError,
   WorkspaceNotFoundError,
@@ -33,7 +32,6 @@ export class RemoveWorkspaceMemberService {
     @Inject(WORKSPACE_REPOSITORY)
     private readonly workspaceRepository: WorkspaceRepositoryPort,
     private readonly workspaceRealtimeEventsService: WorkspaceRealtimeEventsService,
-
   ) { }
 
   async execute(
@@ -47,10 +45,6 @@ export class RemoveWorkspaceMemberService {
 
     if (!workspace) {
       throw new WorkspaceNotFoundError();
-    }
-
-    if (!workspace.isOwnedBy(actorUserId)) {
-      throw new WorkspaceAccessDeniedError();
     }
 
     const member =
@@ -74,7 +68,7 @@ export class RemoveWorkspaceMemberService {
       workspaceId: input.workspaceId,
       memberId: member.userId,
       removedBy: {
-        userId: input.actorUserId,
+        userId: actorUserId.value,
       },
       removedAt: new Date().toISOString(),
     });

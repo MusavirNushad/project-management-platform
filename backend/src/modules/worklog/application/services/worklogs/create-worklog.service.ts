@@ -1,8 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
-import { WorklogPermissionService } from '../permissions/worklog-permission.service';
-
 import { WORKLOG_REPOSITORY } from '../../../domain/ports/worklog.repository.port';
 import type {
   WorklogDetails,
@@ -13,7 +11,6 @@ import { WorklogEntity } from '../../../domain/entities/worklog.entity';
 
 import {
   InvalidWorklogDateRangeError,
-  WorklogProjectAccessDeniedError,
   WorklogProjectNotFoundError,
   WorklogTaskNotFoundError,
   WorklogWorkspaceNotFoundError,
@@ -43,8 +40,7 @@ export class CreateWorklogService {
   constructor(
     @Inject(WORKLOG_REPOSITORY)
     private readonly worklogRepository: WorklogRepositoryPort,
-    private readonly worklogPermissionService: WorklogPermissionService,
-  ) {}
+  ) { }
 
   async execute(input: CreateWorklogInput): Promise<CreateWorklogResult> {
     const workspaceId = WorkspaceId.create(input.workspaceId);
@@ -80,17 +76,6 @@ export class CreateWorklogService {
 
     if (!task) {
       throw new WorklogTaskNotFoundError();
-    }
-
-    const canCreateWorklog =
-      await this.worklogPermissionService.canCreateWorklog({
-        workspaceId,
-        projectId,
-        userId,
-      });
-
-    if (!canCreateWorklog) {
-      throw new WorklogProjectAccessDeniedError();
     }
 
     const worklog = WorklogEntity.create({

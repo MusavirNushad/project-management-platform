@@ -6,19 +6,14 @@ import type {
   WorkspaceRepositoryPort,
 } from '../../../domain/ports/workspace.repository.port';
 
-import {
-  WorkspaceAccessDeniedError,
-  WorkspaceNotFoundError,
-} from '../../../domain/errors/workspace-domain.errors';
+import { WorkspaceNotFoundError } from '../../../domain/errors/workspace-domain.errors';
 
-import { UserId } from '../../../domain/value-objects/user-id.vo';
 import { WorkspaceId } from '../../../domain/value-objects/workspace-id.vo';
 
 export type WorkspaceMemberListItemResult = WorkspaceMemberDetails;
 
 export type GetWorkspaceMembersInput = {
   workspaceId: string;
-  userId: string;
 };
 
 export type GetWorkspaceMembersResult = {
@@ -31,22 +26,17 @@ export class GetWorkspaceMembersService {
   constructor(
     @Inject(WORKSPACE_REPOSITORY)
     private readonly workspaceRepository: WorkspaceRepositoryPort,
-  ) {}
+  ) { }
 
   async execute(
     input: GetWorkspaceMembersInput,
   ): Promise<GetWorkspaceMembersResult> {
     const workspaceId = WorkspaceId.create(input.workspaceId);
-    const userId = UserId.create(input.userId);
 
     const workspace = await this.workspaceRepository.findById(workspaceId);
 
     if (!workspace) {
       throw new WorkspaceNotFoundError();
-    }
-
-    if (!workspace.hasMember(userId)) {
-      throw new WorkspaceAccessDeniedError();
     }
 
     const members =

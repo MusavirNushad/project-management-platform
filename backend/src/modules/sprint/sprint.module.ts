@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 
-import { PrismaModule } from '../../shared/infrastructure/database/prisma.module';
-import { IdentityModule } from '../identity/identity.module';
 import { AccessControlModule } from '../access-control/access-control.module';
+import { IdentityModule } from '../identity/identity.module';
 
-import { SprintPermissionService } from './application/services/permissions/sprint-permission.service';
+import { PrismaModule } from '../../shared/infrastructure/database/prisma.module';
+
 import { CreateSprintService } from './application/services/sprints/create-sprint.service';
 import { GetProjectSprintsService } from './application/services/sprints/get-project-sprints.service';
 import { GetSprintByIdService } from './application/services/sprints/get-sprint-by-id.service';
@@ -28,7 +28,6 @@ import { SprintTaskController } from './presentation/controllers/sprint-task.con
     GetProjectSprintsService,
     GetSprintByIdService,
     UpdateSprintService,
-    SprintPermissionService,
     AddTaskToSprintService,
     GetSprintTasksService,
     RemoveTaskFromSprintService,
@@ -38,4 +37,4 @@ import { SprintTaskController } from './presentation/controllers/sprint-task.con
     },
   ],
 })
-export class SprintModule {}
+export class SprintModule { }

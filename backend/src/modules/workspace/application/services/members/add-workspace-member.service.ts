@@ -13,7 +13,6 @@ import type {
 import { WorkspaceMemberEntity } from '../../../domain/entities/workspace-member.entity';
 
 import {
-  WorkspaceAccessDeniedError,
   WorkspaceMemberAlreadyExistsError,
   WorkspaceMemberNotFoundError,
   WorkspaceMemberUserNotFoundError,
@@ -52,10 +51,6 @@ export class AddWorkspaceMemberService {
 
     if (!workspace) {
       throw new WorkspaceNotFoundError();
-    }
-
-    if (!workspace.isOwnedBy(actorUserId)) {
-      throw new WorkspaceAccessDeniedError();
     }
 
     const targetUser = await this.workspaceRepository.findUserByEmail(
@@ -106,7 +101,7 @@ export class AddWorkspaceMemberService {
       memberId: targetUser.id,
       roleName: createdMember.role.name,
       addedBy: {
-        userId: input.actorUserId,
+        userId: actorUserId.value,
       },
       addedAt: new Date().toISOString(),
     });

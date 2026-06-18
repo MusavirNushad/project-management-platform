@@ -3,21 +3,24 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../shared/infrastructure/database/prisma.module';
 import { SocketAuthenticationService } from '../../shared/infrastructure/realtime/services/socket-authentication.service';
 
+import { AccessControlModule } from '../access-control/access-control.module';
 import { IdentityModule } from '../identity/identity.module';
 
-import { ProjectRealtimeAccessService } from './application/services/realtime/project-realtime-access.service';
-import { ProjectRealtimeEventsService } from './application/services/realtime/project-realtime-events.service';
+import { ProjectRealtimeEventsService } from './application/services/project-realtime/project-realtime-events.service';
 import { ProjectRealtimeGateway } from './presentation/gateways/project-realtime.gateway';
 
 import { AddProjectMemberService } from './application/services/members/add-project-member.service';
 import { GetProjectMembersService } from './application/services/members/get-project-members.service';
-import { ProjectMemberPermissionService } from './application/services/members/project-member-permission.service';
 import { RemoveProjectMemberService } from './application/services/members/remove-project-member.service';
 import { UpdateProjectMemberRoleService } from './application/services/members/update-project-member-role.service';
+
 import { CreateProjectService } from './application/services/projects/create-project.service';
 import { GetProjectByIdService } from './application/services/projects/get-project-by-id.service';
 import { GetWorkspaceProjectsService } from './application/services/projects/get-workspace-projects.service';
 import { UpdateProjectService } from './application/services/projects/update-project.service';
+
+import { ProjectRealtimeAuthenticatedGuard } from './presentation/guards/project-realtime-authenticated.guard';
+import { ProjectRealtimeProjectAccessGuard } from './presentation/guards/project-realtime-project-access.guard';
 
 import { PROJECT_REPOSITORY } from './domain/ports/project.repository.port';
 
@@ -27,21 +30,22 @@ import { ProjectMemberController } from './presentation/controllers/project-memb
 import { ProjectController } from './presentation/controllers/project.controller';
 
 @Module({
-  imports: [PrismaModule, IdentityModule],
+  imports: [PrismaModule, IdentityModule, AccessControlModule],
   controllers: [ProjectController, ProjectMemberController],
   providers: [
     SocketAuthenticationService,
+
     CreateProjectService,
     GetWorkspaceProjectsService,
     GetProjectByIdService,
     UpdateProjectService,
 
     ProjectRealtimeGateway,
-    ProjectRealtimeAccessService,
     ProjectRealtimeEventsService,
+    ProjectRealtimeAuthenticatedGuard,
+    ProjectRealtimeProjectAccessGuard,
 
     GetProjectMembersService,
-    ProjectMemberPermissionService,
     AddProjectMemberService,
     UpdateProjectMemberRoleService,
     RemoveProjectMemberService,
@@ -53,3 +57,4 @@ import { ProjectController } from './presentation/controllers/project.controller
   ],
 })
 export class ProjectModule { }
+

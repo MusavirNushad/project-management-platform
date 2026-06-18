@@ -12,8 +12,13 @@ import { CreateTaskService } from '../../application/services/tasks/create-task.
 import { GetProjectTasksService } from '../../application/services/tasks/get-project-tasks.service';
 import { UpdateTaskService } from '../../application/services/tasks/update-task.service';
 
+import { RequireRoles } from '../../../access-control/presentation/decorators/require-roles.decorator';
+import { AccessControlGuard } from '../../../access-control/presentation/guards/access-control.guard';
+
 import { CurrentUser } from '../../../identity/infrastructure/security/current-user.decorator';
 import { JwtAuthGuard } from '../../../identity/infrastructure/security/jwt-auth.guard';
+
+import { TaskReporterOrProjectAdminGuard } from '../guards/task-reporter-or-project-admin.guard';
 
 import { CreateTaskRequestDto } from '../dtos/requests/create-task.request.dto';
 import { UpdateTaskRequestDto } from '../dtos/requests/update-task.request.dto';
@@ -27,9 +32,14 @@ export class TaskController {
     private readonly createTaskService: CreateTaskService,
     private readonly getProjectTasksService: GetProjectTasksService,
     private readonly updateTaskService: UpdateTaskService,
-  ) {}
+  ) { }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AccessControlGuard)
+  @RequireRoles({
+    scope: 'project',
+    roles: ['ADMIN', 'MEMBER'],
+    allowWorkspaceOwner: true,
+  })
   @Post()
   async createTask(
     @CurrentUser('userId') userId: string,
@@ -51,26 +61,28 @@ export class TaskController {
     return TaskResponseDto.fromResult(result);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AccessControlGuard)
+  @RequireRoles({
+    scope: 'project',
+    roles: ['ADMIN', 'MEMBER'],
+    allowWorkspaceOwner: true,
+  })
   @Get()
   async getProjectTasks(
-    @CurrentUser('userId') userId: string,
     @Param('workspaceId') workspaceId: string,
     @Param('projectId') projectId: string,
   ): Promise<TaskListResponseDto> {
     const result = await this.getProjectTasksService.execute({
       workspaceId,
       projectId,
-      userId,
     });
 
     return TaskListResponseDto.fromResult(result);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, TaskReporterOrProjectAdminGuard)
   @Patch(':taskId')
   async updateTask(
-    @CurrentUser('userId') userId: string,
     @Param('workspaceId') workspaceId: string,
     @Param('projectId') projectId: string,
     @Param('taskId') taskId: string,
@@ -80,7 +92,6 @@ export class TaskController {
       workspaceId,
       projectId,
       taskId,
-      userId,
       title: dto.title,
       description: dto.description,
       status: dto.status,

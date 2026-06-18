@@ -1,4 +1,4 @@
-import { Logger, UsePipes } from '@nestjs/common';
+import { Logger, UseGuards, UsePipes } from '@nestjs/common';
 import {
     ConnectedSocket,
     MessageBody,
@@ -7,12 +7,10 @@ import {
     OnGatewayInit,
     SubscribeMessage,
     WebSocketGateway,
-    WsException,
 } from '@nestjs/websockets';
 import type { Server } from 'socket.io';
 
 import { disconnectUnauthorizedSocket } from '../../../../shared/infrastructure/realtime/helpers/disconnect-unauthorized-socket.helper';
-import { ensureAuthenticatedSocket } from '../../../../shared/infrastructure/realtime/helpers/ensure-authenticated-socket.helper';
 import { SocketAuthenticationService } from '../../../../shared/infrastructure/realtime/services/socket-authentication.service';
 import type { AuthenticatedSocket } from '../../../../shared/infrastructure/realtime/types/authenticated-socket.type';
 import {
@@ -20,10 +18,13 @@ import {
     realtimeValidationPipe,
 } from '../../../../shared/infrastructure/realtime/config/realtime-gateway.config';
 
-import { ProjectRealtimeAccessService } from '../../application/services/realtime/project-realtime-access.service';
-import { ProjectRealtimeEventsService } from '../../application/services/realtime/project-realtime-events.service';
+import { ProjectRealtimeEventsService } from '../../application/services/project-realtime/project-realtime-events.service';
 import { ProjectRealtimeEvent } from '../../application/types/project-realtime-event.types';
 import { ProjectRealtimeRoom } from '../../application/types/project-realtime-room.types';
+
+import { ProjectRealtimeAuthenticatedGuard } from '../guards/project-realtime-authenticated.guard';
+import { ProjectRealtimeProjectAccessGuard } from '../guards/project-realtime-project-access.guard';
+
 import { JoinProjectRoomDto } from '../dtos/requests/join-project-room.dto';
 
 @UsePipes(realtimeValidationPipe)
@@ -35,7 +36,6 @@ export class ProjectRealtimeGateway
     constructor(
         private readonly socketAuthenticationService: SocketAuthenticationService,
         private readonly projectRealtimeEventsService: ProjectRealtimeEventsService,
-        private readonly projectRealtimeAccessService: ProjectRealtimeAccessService,
     ) { }
 
     afterInit(server: Server): void {
@@ -76,22 +76,12 @@ export class ProjectRealtimeGateway
         );
     }
 
+    @UseGuards(ProjectRealtimeAuthenticatedGuard, ProjectRealtimeProjectAccessGuard)
     @SubscribeMessage('join:project')
     async handleJoinProject(
         @ConnectedSocket() client: AuthenticatedSocket,
         @MessageBody() body: JoinProjectRoomDto,
     ): Promise<{ success: boolean; room: string }> {
-        const user = ensureAuthenticatedSocket(client);
-
-        const canJoin = await this.projectRealtimeAccessService.canJoinProject({
-            userId: user.userId,
-            projectId: body.projectId,
-        });
-
-        if (!canJoin) {
-            throw new WsException('You are not allowed to join this project room.');
-        }
-
         const room = ProjectRealtimeRoom.project(body.projectId);
 
         await client.join(room);
@@ -106,13 +96,12 @@ export class ProjectRealtimeGateway
         };
     }
 
+    @UseGuards(ProjectRealtimeAuthenticatedGuard)
     @SubscribeMessage('leave:project')
     async handleLeaveProject(
         @ConnectedSocket() client: AuthenticatedSocket,
         @MessageBody() body: JoinProjectRoomDto,
     ): Promise<{ success: boolean; room: string }> {
-        ensureAuthenticatedSocket(client);
-
         const room = ProjectRealtimeRoom.project(body.projectId);
 
         await client.leave(room);

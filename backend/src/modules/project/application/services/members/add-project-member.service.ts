@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
-import { ProjectRealtimeEventsService } from '../realtime/project-realtime-events.service';
+import { ProjectRealtimeEventsService } from '../project-realtime/project-realtime-events.service';
 
 import { PROJECT_REPOSITORY } from '../../../domain/ports/project.repository.port';
 import type {
@@ -27,8 +27,6 @@ import { ProjectMemberId } from '../../../domain/value-objects/project-member-id
 import { UserId } from '../../../domain/value-objects/user-id.vo';
 import { WorkspaceId } from '../../../domain/value-objects/workspace-id.vo';
 
-import { ProjectMemberPermissionService } from './project-member-permission.service';
-
 export type AddProjectMemberInput = {
   workspaceId: string;
   projectId: string;
@@ -44,7 +42,6 @@ export class AddProjectMemberService {
   constructor(
     @Inject(PROJECT_REPOSITORY)
     private readonly projectRepository: ProjectRepositoryPort,
-    private readonly projectMemberPermissionService: ProjectMemberPermissionService,
     private readonly projectRealtimeEventsService: ProjectRealtimeEventsService,
   ) { }
 
@@ -67,17 +64,6 @@ export class AddProjectMemberService {
 
     if (!project) {
       throw new ProjectNotFoundError();
-    }
-
-    const canManageProjectMembers =
-      await this.projectMemberPermissionService.canManageProjectMembers({
-        workspaceId,
-        projectId,
-        actorUserId,
-      });
-
-    if (!canManageProjectMembers) {
-      throw new ProjectWorkspaceAccessDeniedError();
     }
 
     const targetUser = await this.projectRepository.findUserByEmail(
@@ -144,7 +130,7 @@ export class AddProjectMemberService {
       memberId: targetUser.id,
       roleName: createdMember.role.name,
       addedBy: {
-        userId: input.actorUserId,
+        userId: actorUserId.value,
       },
       addedAt: new Date().toISOString(),
     });

@@ -1,7 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
 
-import { SprintPermissionService } from '../permissions/sprint-permission.service';
-
 import { SPRINT_REPOSITORY } from '../../../domain/ports/sprint.repository.port';
 import type { SprintRepositoryPort } from '../../../domain/ports/sprint.repository.port';
 
@@ -11,13 +9,11 @@ import {
 } from '../../../domain/entities/sprint.entity';
 
 import {
-  SprintProjectAccessDeniedError,
   SprintProjectNotFoundError,
   SprintWorkspaceNotFoundError,
 } from '../../../domain/errors/sprint-domain.errors';
 
 import { ProjectId } from '../../../domain/value-objects/project-id.vo';
-import { UserId } from '../../../domain/value-objects/user-id.vo';
 import { WorkspaceId } from '../../../domain/value-objects/workspace-id.vo';
 
 export type ProjectSprintListItemResult = {
@@ -36,7 +32,6 @@ export type ProjectSprintListItemResult = {
 export type GetProjectSprintsInput = {
   workspaceId: string;
   projectId: string;
-  userId: string;
 };
 
 export type GetProjectSprintsResult = {
@@ -49,15 +44,13 @@ export class GetProjectSprintsService {
   constructor(
     @Inject(SPRINT_REPOSITORY)
     private readonly sprintRepository: SprintRepositoryPort,
-    private readonly sprintPermissionService: SprintPermissionService,
-  ) {}
+  ) { }
 
   async execute(
     input: GetProjectSprintsInput,
   ): Promise<GetProjectSprintsResult> {
     const workspaceId = WorkspaceId.create(input.workspaceId);
     const projectId = ProjectId.create(input.projectId);
-    const userId = UserId.create(input.userId);
 
     const workspaceExists =
       await this.sprintRepository.workspaceExists(workspaceId);
@@ -73,16 +66,6 @@ export class GetProjectSprintsService {
 
     if (!projectExists) {
       throw new SprintProjectNotFoundError();
-    }
-
-    const canViewSprints = await this.sprintPermissionService.canViewSprints({
-      workspaceId,
-      projectId,
-      userId,
-    });
-
-    if (!canViewSprints) {
-      throw new SprintProjectAccessDeniedError();
     }
 
     const sprints = await this.sprintRepository.findByProjectId(projectId);

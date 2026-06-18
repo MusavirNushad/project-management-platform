@@ -14,8 +14,14 @@ import { DeleteTaskCommentService } from '../../application/services/comments/de
 import { GetTaskCommentsService } from '../../application/services/comments/get-task-comments.service';
 import { UpdateTaskCommentService } from '../../application/services/comments/update-task-comment.service';
 
+import { RequireRoles } from '../../../access-control/presentation/decorators/require-roles.decorator';
+import { AccessControlGuard } from '../../../access-control/presentation/guards/access-control.guard';
+
 import { CurrentUser } from '../../../identity/infrastructure/security/current-user.decorator';
 import { JwtAuthGuard } from '../../../identity/infrastructure/security/jwt-auth.guard';
+
+import { TaskCommentAuthorGuard } from '../guards/task-comment-author.guard';
+import { TaskCommentAuthorOrProjectAdminGuard } from '../guards/task-comment-author-or-project-admin.guard';
 
 import { CreateTaskCommentRequestDto } from '../dtos/requests/create-task-comment.request.dto';
 import { UpdateTaskCommentRequestDto } from '../dtos/requests/update-task-comment.request.dto';
@@ -33,9 +39,14 @@ export class TaskCommentController {
     private readonly getTaskCommentsService: GetTaskCommentsService,
     private readonly updateTaskCommentService: UpdateTaskCommentService,
     private readonly deleteTaskCommentService: DeleteTaskCommentService,
-  ) {}
+  ) { }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AccessControlGuard)
+  @RequireRoles({
+    scope: 'project',
+    roles: ['ADMIN', 'MEMBER'],
+    allowWorkspaceOwner: true,
+  })
   @Post()
   async createTaskComment(
     @CurrentUser('userId') authorId: string,
@@ -56,10 +67,14 @@ export class TaskCommentController {
     return TaskCommentResponseDto.fromResult(result);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AccessControlGuard)
+  @RequireRoles({
+    scope: 'project',
+    roles: ['ADMIN', 'MEMBER'],
+    allowWorkspaceOwner: true,
+  })
   @Get()
   async getTaskComments(
-    @CurrentUser('userId') userId: string,
     @Param('workspaceId') workspaceId: string,
     @Param('projectId') projectId: string,
     @Param('taskId') taskId: string,
@@ -68,16 +83,19 @@ export class TaskCommentController {
       workspaceId,
       projectId,
       taskId,
-      userId,
     });
 
     return TaskCommentListResponseDto.fromResult(result);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AccessControlGuard, TaskCommentAuthorGuard)
+  @RequireRoles({
+    scope: 'project',
+    roles: ['ADMIN', 'MEMBER'],
+    allowWorkspaceOwner: true,
+  })
   @Patch(':commentId')
   async updateTaskComment(
-    @CurrentUser('userId') userId: string,
     @Param('workspaceId') workspaceId: string,
     @Param('projectId') projectId: string,
     @Param('taskId') taskId: string,
@@ -89,17 +107,15 @@ export class TaskCommentController {
       projectId,
       taskId,
       commentId,
-      userId,
       body: dto.body,
     });
 
     return TaskCommentResponseDto.fromResult(result);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, TaskCommentAuthorOrProjectAdminGuard)
   @Delete(':commentId')
   async deleteTaskComment(
-    @CurrentUser('userId') userId: string,
     @Param('workspaceId') workspaceId: string,
     @Param('projectId') projectId: string,
     @Param('taskId') taskId: string,
@@ -110,7 +126,6 @@ export class TaskCommentController {
       projectId,
       taskId,
       commentId,
-      userId,
     });
 
     return DeleteTaskCommentResponseDto.fromResult(result);

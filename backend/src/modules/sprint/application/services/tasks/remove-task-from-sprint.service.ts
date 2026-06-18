@@ -1,7 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
 
-import { SprintPermissionService } from '../permissions/sprint-permission.service';
-
 import { SPRINT_REPOSITORY } from '../../../domain/ports/sprint.repository.port';
 import type { SprintRepositoryPort } from '../../../domain/ports/sprint.repository.port';
 
@@ -10,7 +8,6 @@ import { SprintTaskEntity } from '../../../domain/entities/sprint-task.entity';
 import {
   SprintCannotRemoveTasksError,
   SprintNotFoundError,
-  SprintProjectAccessDeniedError,
   SprintProjectNotFoundError,
   SprintTaskAlreadyRemovedError,
   SprintTaskNotFoundError,
@@ -22,7 +19,6 @@ import { ProjectId } from '../../../domain/value-objects/project-id.vo';
 import { SprintId } from '../../../domain/value-objects/sprint-id.vo';
 import { SprintTaskId } from '../../../domain/value-objects/sprint-task-id.vo';
 import { TaskId } from '../../../domain/value-objects/task-id.vo';
-import { UserId } from '../../../domain/value-objects/user-id.vo';
 import { WorkspaceId } from '../../../domain/value-objects/workspace-id.vo';
 
 export type RemoveTaskFromSprintInput = {
@@ -30,7 +26,6 @@ export type RemoveTaskFromSprintInput = {
   projectId: string;
   sprintId: string;
   sprintTaskId: string;
-  userId: string;
 };
 
 export type RemoveTaskFromSprintResult = {
@@ -42,8 +37,7 @@ export class RemoveTaskFromSprintService {
   constructor(
     @Inject(SPRINT_REPOSITORY)
     private readonly sprintRepository: SprintRepositoryPort,
-    private readonly sprintPermissionService: SprintPermissionService,
-  ) {}
+  ) { }
 
   async execute(
     input: RemoveTaskFromSprintInput,
@@ -52,7 +46,6 @@ export class RemoveTaskFromSprintService {
     const projectId = ProjectId.create(input.projectId);
     const sprintId = SprintId.create(input.sprintId);
     const sprintTaskId = SprintTaskId.create(input.sprintTaskId);
-    const userId = UserId.create(input.userId);
 
     const workspaceExists =
       await this.sprintRepository.workspaceExists(workspaceId);
@@ -84,17 +77,6 @@ export class RemoveTaskFromSprintService {
       sprint.getStatus() === 'CANCELLED'
     ) {
       throw new SprintCannotRemoveTasksError();
-    }
-
-    const canManageSprints =
-      await this.sprintPermissionService.canManageSprints({
-        workspaceId,
-        projectId,
-        userId,
-      });
-
-    if (!canManageSprints) {
-      throw new SprintProjectAccessDeniedError();
     }
 
     const existingSprintTask =

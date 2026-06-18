@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 
-import { TaskPermissionService } from '../permissions/task-permission.service';
+
 
 import { TASK_REPOSITORY } from '../../../domain/ports/task.repository.port';
 import type { TaskRepositoryPort } from '../../../domain/ports/task.repository.port';
@@ -12,13 +12,11 @@ import type {
 } from '../../../domain/entities/task.entity';
 
 import {
-  TaskProjectAccessDeniedError,
   TaskProjectNotFoundError,
   TaskWorkspaceNotFoundError,
 } from '../../../domain/errors/task-domain.errors';
 
 import { ProjectId } from '../../../domain/value-objects/project-id.vo';
-import { UserId } from '../../../domain/value-objects/user-id.vo';
 import { WorkspaceId } from '../../../domain/value-objects/workspace-id.vo';
 
 export type ProjectTaskListItemResult = {
@@ -43,7 +41,6 @@ export type ProjectTaskListItemResult = {
 export type GetProjectTasksInput = {
   workspaceId: string;
   projectId: string;
-  userId: string;
 };
 
 export type GetProjectTasksResult = {
@@ -56,13 +53,11 @@ export class GetProjectTasksService {
   constructor(
     @Inject(TASK_REPOSITORY)
     private readonly taskRepository: TaskRepositoryPort,
-    private readonly taskPermissionService: TaskPermissionService,
-  ) {}
+  ) { }
 
   async execute(input: GetProjectTasksInput): Promise<GetProjectTasksResult> {
     const workspaceId = WorkspaceId.create(input.workspaceId);
     const projectId = ProjectId.create(input.projectId);
-    const userId = UserId.create(input.userId);
 
     const workspaceExists =
       await this.taskRepository.workspaceExists(workspaceId);
@@ -80,16 +75,6 @@ export class GetProjectTasksService {
       throw new TaskProjectNotFoundError();
     }
 
-    const canViewProjectTasks =
-      await this.taskPermissionService.canViewProjectTasks({
-        workspaceId,
-        projectId,
-        userId,
-      });
-
-    if (!canViewProjectTasks) {
-      throw new TaskProjectAccessDeniedError();
-    }
 
     const tasks = await this.taskRepository.findByProjectId(
       workspaceId,

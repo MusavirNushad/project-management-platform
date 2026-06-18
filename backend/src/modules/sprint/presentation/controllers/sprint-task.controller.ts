@@ -12,7 +12,9 @@ import { AddTaskToSprintService } from '../../application/services/tasks/add-tas
 import { GetSprintTasksService } from '../../application/services/tasks/get-sprint-tasks.service';
 import { RemoveTaskFromSprintService } from '../../application/services/tasks/remove-task-from-sprint.service';
 
-import { CurrentUser } from '../../../identity/infrastructure/security/current-user.decorator';
+import { RequireRoles } from '../../../access-control/presentation/decorators/require-roles.decorator';
+import { AccessControlGuard } from '../../../access-control/presentation/guards/access-control.guard';
+
 import { JwtAuthGuard } from '../../../identity/infrastructure/security/jwt-auth.guard';
 
 import { AddTaskToSprintRequestDto } from '../dtos/requests/add-task-to-sprint.request.dto';
@@ -21,6 +23,7 @@ import { RemoveTaskFromSprintResponseDto } from '../dtos/responses/remove-task-f
 import { SprintTaskListResponseDto } from '../dtos/responses/sprint-task-list.response.dto';
 import { SprintTaskResponseDto } from '../dtos/responses/sprint-task.response.dto';
 
+@UseGuards(JwtAuthGuard, AccessControlGuard)
 @Controller(
   'workspaces/:workspaceId/projects/:projectId/sprints/:sprintId/tasks',
 )
@@ -29,12 +32,15 @@ export class SprintTaskController {
     private readonly addTaskToSprintService: AddTaskToSprintService,
     private readonly getSprintTasksService: GetSprintTasksService,
     private readonly removeTaskFromSprintService: RemoveTaskFromSprintService,
-  ) {}
+  ) { }
 
-  @UseGuards(JwtAuthGuard)
+  @RequireRoles({
+    scope: 'project',
+    roles: ['ADMIN'],
+    allowWorkspaceOwner: true,
+  })
   @Post()
   async addTaskToSprint(
-    @CurrentUser('userId') userId: string,
     @Param('workspaceId') workspaceId: string,
     @Param('projectId') projectId: string,
     @Param('sprintId') sprintId: string,
@@ -45,17 +51,19 @@ export class SprintTaskController {
       projectId,
       sprintId,
       taskId: dto.taskId,
-      userId,
       position: dto.position,
     });
 
     return SprintTaskResponseDto.fromResult(result);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @RequireRoles({
+    scope: 'project',
+    roles: ['ADMIN', 'MEMBER'],
+    allowWorkspaceOwner: true,
+  })
   @Get()
   async getSprintTasks(
-    @CurrentUser('userId') userId: string,
     @Param('workspaceId') workspaceId: string,
     @Param('projectId') projectId: string,
     @Param('sprintId') sprintId: string,
@@ -64,16 +72,18 @@ export class SprintTaskController {
       workspaceId,
       projectId,
       sprintId,
-      userId,
     });
 
     return SprintTaskListResponseDto.fromResult(result);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @RequireRoles({
+    scope: 'project',
+    roles: ['ADMIN'],
+    allowWorkspaceOwner: true,
+  })
   @Delete(':sprintTaskId')
   async removeTaskFromSprint(
-    @CurrentUser('userId') userId: string,
     @Param('workspaceId') workspaceId: string,
     @Param('projectId') projectId: string,
     @Param('sprintId') sprintId: string,
@@ -84,7 +94,6 @@ export class SprintTaskController {
       projectId,
       sprintId,
       sprintTaskId,
-      userId,
     });
 
     return RemoveTaskFromSprintResponseDto.fromResult(result);

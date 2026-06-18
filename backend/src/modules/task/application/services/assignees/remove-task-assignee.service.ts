@@ -1,12 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 
-import { TaskPermissionService } from '../permissions/task-permission.service';
 
 import { TASK_REPOSITORY } from '../../../domain/ports/task.repository.port';
 import type { TaskRepositoryPort } from '../../../domain/ports/task.repository.port';
 
 import {
-  TaskAccessDeniedError,
   TaskAssigneeNotFoundError,
   TaskAssigneeTaskMismatchError,
   TaskNotFoundError,
@@ -25,7 +23,6 @@ export type RemoveTaskAssigneeInput = {
   projectId: string;
   taskId: string;
   assigneeId: string;
-  actorUserId: string;
 };
 
 export type RemoveTaskAssigneeResult = {
@@ -37,8 +34,7 @@ export class RemoveTaskAssigneeService {
   constructor(
     @Inject(TASK_REPOSITORY)
     private readonly taskRepository: TaskRepositoryPort,
-    private readonly taskPermissionService: TaskPermissionService,
-  ) {}
+  ) { }
 
   async execute(
     input: RemoveTaskAssigneeInput,
@@ -47,7 +43,6 @@ export class RemoveTaskAssigneeService {
     const projectId = ProjectId.create(input.projectId);
     const taskId = TaskId.create(input.taskId);
     const assigneeId = TaskAssigneeId.create(input.assigneeId);
-    const actorUserId = UserId.create(input.actorUserId);
 
     const workspaceExists =
       await this.taskRepository.workspaceExists(workspaceId);
@@ -75,17 +70,6 @@ export class RemoveTaskAssigneeService {
       throw new TaskNotFoundError();
     }
 
-    const canManageTaskAssignees =
-      await this.taskPermissionService.canManageTaskAssignees({
-        workspaceId,
-        projectId,
-        userId: actorUserId,
-        task,
-      });
-
-    if (!canManageTaskAssignees) {
-      throw new TaskAccessDeniedError();
-    }
 
     const assignee = await this.taskRepository.findTaskAssigneeById(assigneeId);
 

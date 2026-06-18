@@ -1,8 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
-import { SprintPermissionService } from '../permissions/sprint-permission.service';
-
 import { SPRINT_REPOSITORY } from '../../../domain/ports/sprint.repository.port';
 import type { SprintRepositoryPort } from '../../../domain/ports/sprint.repository.port';
 
@@ -13,7 +11,6 @@ import {
 
 import {
   InvalidSprintDateRangeError,
-  SprintProjectAccessDeniedError,
   SprintProjectNotFoundError,
   SprintWorkspaceNotFoundError,
 } from '../../../domain/errors/sprint-domain.errors';
@@ -53,8 +50,7 @@ export class CreateSprintService {
   constructor(
     @Inject(SPRINT_REPOSITORY)
     private readonly sprintRepository: SprintRepositoryPort,
-    private readonly sprintPermissionService: SprintPermissionService,
-  ) {}
+  ) { }
 
   async execute(input: CreateSprintInput): Promise<CreateSprintResult> {
     const workspaceId = WorkspaceId.create(input.workspaceId);
@@ -81,17 +77,6 @@ export class CreateSprintService {
 
     if (!projectExists) {
       throw new SprintProjectNotFoundError();
-    }
-
-    const canManageSprints =
-      await this.sprintPermissionService.canManageSprints({
-        workspaceId,
-        projectId,
-        userId: createdBy,
-      });
-
-    if (!canManageSprints) {
-      throw new SprintProjectAccessDeniedError();
     }
 
     const sprint = SprintEntity.create({

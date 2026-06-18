@@ -7,20 +7,28 @@ import { GetReportByIdService } from '../../application/services/reports/get-rep
 import { CurrentUser } from '../../../identity/infrastructure/security/current-user.decorator';
 import { JwtAuthGuard } from '../../../identity/infrastructure/security/jwt-auth.guard';
 
+import { RequireRoles } from '../../../access-control/presentation/decorators/require-roles.decorator';
+import { AccessControlGuard } from '../../../access-control/presentation/guards/access-control.guard';
+
 import { CreateReportRequestDto } from '../dtos/requests/create-report.request.dto';
 
 import { ReportListResponseDto } from '../dtos/responses/report-list.response.dto';
 import { ReportWithSummaryResponseDto } from '../dtos/responses/report-with-summary.response.dto';
 
+@UseGuards(JwtAuthGuard, AccessControlGuard)
 @Controller('workspaces/:workspaceId/projects/:projectId/reports')
 export class ReportController {
   constructor(
     private readonly createReportService: CreateReportService,
     private readonly getProjectReportsService: GetProjectReportsService,
     private readonly getReportByIdService: GetReportByIdService,
-  ) {}
+  ) { }
 
-  @UseGuards(JwtAuthGuard)
+  @RequireRoles({
+    scope: 'project',
+    roles: ['ADMIN'],
+    allowWorkspaceOwner: true,
+  })
   @Post()
   async createReport(
     @CurrentUser('userId') userId: string,
@@ -40,26 +48,31 @@ export class ReportController {
     return ReportWithSummaryResponseDto.fromResult(result);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @RequireRoles({
+    scope: 'project',
+    roles: ['ADMIN', 'MEMBER'],
+    allowWorkspaceOwner: true,
+  })
   @Get()
   async getProjectReports(
-    @CurrentUser('userId') userId: string,
     @Param('workspaceId') workspaceId: string,
     @Param('projectId') projectId: string,
   ): Promise<ReportListResponseDto> {
     const result = await this.getProjectReportsService.execute({
       workspaceId,
       projectId,
-      userId,
     });
 
     return ReportListResponseDto.fromResult(result);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @RequireRoles({
+    scope: 'project',
+    roles: ['ADMIN', 'MEMBER'],
+    allowWorkspaceOwner: true,
+  })
   @Get(':reportId')
   async getReportById(
-    @CurrentUser('userId') userId: string,
     @Param('workspaceId') workspaceId: string,
     @Param('projectId') projectId: string,
     @Param('reportId') reportId: string,
@@ -68,9 +81,9 @@ export class ReportController {
       workspaceId,
       projectId,
       reportId,
-      userId,
     });
 
     return ReportWithSummaryResponseDto.fromResult(result);
   }
 }
+

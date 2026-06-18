@@ -13,6 +13,9 @@ import { GetProjectByIdService } from '../../application/services/projects/get-p
 import { GetWorkspaceProjectsService } from '../../application/services/projects/get-workspace-projects.service';
 import { UpdateProjectService } from '../../application/services/projects/update-project.service';
 
+import { RequireRoles } from '../../../access-control/presentation/decorators/require-roles.decorator';
+import { AccessControlGuard } from '../../../access-control/presentation/guards/access-control.guard';
+
 import { CurrentUser } from '../../../identity/infrastructure/security/current-user.decorator';
 import { JwtAuthGuard } from '../../../identity/infrastructure/security/jwt-auth.guard';
 
@@ -22,6 +25,7 @@ import { UpdateProjectRequestDto } from '../dtos/requests/update-project.request
 import { ProjectListResponseDto } from '../dtos/responses/project-list.response.dto';
 import { ProjectResponseDto } from '../dtos/responses/project.response.dto';
 
+@UseGuards(JwtAuthGuard, AccessControlGuard)
 @Controller('workspaces/:workspaceId/projects')
 export class ProjectController {
   constructor(
@@ -29,9 +33,12 @@ export class ProjectController {
     private readonly getWorkspaceProjectsService: GetWorkspaceProjectsService,
     private readonly getProjectByIdService: GetProjectByIdService,
     private readonly updateProjectService: UpdateProjectService,
-  ) {}
+  ) { }
 
-  @UseGuards(JwtAuthGuard)
+  @RequireRoles({
+    scope: 'workspace',
+    roles: ['OWNER'],
+  })
   @Post()
   async createProject(
     @CurrentUser('userId') userId: string,
@@ -50,40 +57,44 @@ export class ProjectController {
     return ProjectResponseDto.fromResult(result);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @RequireRoles({
+    scope: 'workspace',
+    roles: ['OWNER', 'ADMIN', 'MEMBER'],
+  })
   @Get()
   async getWorkspaceProjects(
-    @CurrentUser('userId') userId: string,
     @Param('workspaceId') workspaceId: string,
   ): Promise<ProjectListResponseDto> {
     const result = await this.getWorkspaceProjectsService.execute({
       workspaceId,
-      userId,
     });
 
     return ProjectListResponseDto.fromResult(result);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @RequireRoles({
+    scope: 'workspace',
+    roles: ['OWNER', 'ADMIN', 'MEMBER'],
+  })
   @Get(':projectId')
   async getProjectById(
-    @CurrentUser('userId') userId: string,
     @Param('workspaceId') workspaceId: string,
     @Param('projectId') projectId: string,
   ): Promise<ProjectResponseDto> {
     const result = await this.getProjectByIdService.execute({
       workspaceId,
       projectId,
-      userId,
     });
 
     return ProjectResponseDto.fromResult(result);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @RequireRoles({
+    scope: 'workspace',
+    roles: ['OWNER'],
+  })
   @Patch(':projectId')
   async updateProject(
-    @CurrentUser('userId') userId: string,
     @Param('workspaceId') workspaceId: string,
     @Param('projectId') projectId: string,
     @Body() dto: UpdateProjectRequestDto,
@@ -91,7 +102,6 @@ export class ProjectController {
     const result = await this.updateProjectService.execute({
       workspaceId,
       projectId,
-      userId,
       title: dto.title,
       description: dto.description,
       startDate: dto.startDate,
@@ -102,3 +112,4 @@ export class ProjectController {
     return ProjectResponseDto.fromResult(result);
   }
 }
+

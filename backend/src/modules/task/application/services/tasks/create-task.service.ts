@@ -1,8 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
-import { TaskPermissionService } from '../permissions/task-permission.service';
-import { TaskRealtimeEventsService } from '../realtime/task-realtime-events.service';
+import { TaskRealtimeEventsService } from '../task-realtime/task-realtime-events.service';
 
 import { TASK_REPOSITORY } from '../../../domain/ports/task.repository.port';
 import type { TaskRepositoryPort } from '../../../domain/ports/task.repository.port';
@@ -15,7 +14,6 @@ import {
 
 import {
   InvalidTaskDateRangeError,
-  TaskProjectAccessDeniedError,
   TaskProjectNotFoundError,
   TaskWorkspaceNotFoundError,
 } from '../../../domain/errors/task-domain.errors';
@@ -62,7 +60,6 @@ export class CreateTaskService {
   constructor(
     @Inject(TASK_REPOSITORY)
     private readonly taskRepository: TaskRepositoryPort,
-    private readonly taskPermissionService: TaskPermissionService,
     private readonly taskRealtimeEventsService: TaskRealtimeEventsService,
   ) { }
 
@@ -93,15 +90,6 @@ export class CreateTaskService {
       throw new TaskProjectNotFoundError();
     }
 
-    const canCreateTask = await this.taskPermissionService.canCreateTask({
-      workspaceId,
-      projectId,
-      userId: reporterId,
-    });
-
-    if (!canCreateTask) {
-      throw new TaskProjectAccessDeniedError();
-    }
 
     const task = TaskEntity.create({
       id: TaskId.create(randomUUID()),

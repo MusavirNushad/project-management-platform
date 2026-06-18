@@ -14,6 +14,9 @@ import { GetProjectMembersService } from '../../application/services/members/get
 import { RemoveProjectMemberService } from '../../application/services/members/remove-project-member.service';
 import { UpdateProjectMemberRoleService } from '../../application/services/members/update-project-member-role.service';
 
+import { RequireRoles } from '../../../access-control/presentation/decorators/require-roles.decorator';
+import { AccessControlGuard } from '../../../access-control/presentation/guards/access-control.guard';
+
 import { CurrentUser } from '../../../identity/infrastructure/security/current-user.decorator';
 import { JwtAuthGuard } from '../../../identity/infrastructure/security/jwt-auth.guard';
 
@@ -31,25 +34,32 @@ export class ProjectMemberController {
     private readonly addProjectMemberService: AddProjectMemberService,
     private readonly updateProjectMemberRoleService: UpdateProjectMemberRoleService,
     private readonly removeProjectMemberService: RemoveProjectMemberService,
-  ) {}
+  ) { }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AccessControlGuard)
+  @RequireRoles({
+    scope: 'workspace',
+    roles: ['OWNER', 'ADMIN', 'MEMBER'],
+  })
   @Get()
   async getProjectMembers(
-    @CurrentUser('userId') userId: string,
     @Param('workspaceId') workspaceId: string,
     @Param('projectId') projectId: string,
   ): Promise<ProjectMemberListResponseDto> {
     const result = await this.getProjectMembersService.execute({
       workspaceId,
       projectId,
-      userId,
     });
 
     return ProjectMemberListResponseDto.fromResult(result);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AccessControlGuard)
+  @RequireRoles({
+    scope: 'project',
+    roles: ['ADMIN'],
+    allowWorkspaceOwner: true,
+  })
   @Post()
   async addProjectMember(
     @CurrentUser('userId') actorUserId: string,
@@ -68,10 +78,14 @@ export class ProjectMemberController {
     return ProjectMemberResponseDto.fromResult(result);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AccessControlGuard)
+  @RequireRoles({
+    scope: 'project',
+    roles: ['ADMIN'],
+    allowWorkspaceOwner: true,
+  })
   @Patch(':memberId')
   async updateProjectMemberRole(
-    @CurrentUser('userId') actorUserId: string,
     @Param('workspaceId') workspaceId: string,
     @Param('projectId') projectId: string,
     @Param('memberId') memberId: string,
@@ -81,14 +95,18 @@ export class ProjectMemberController {
       workspaceId,
       projectId,
       memberId,
-      actorUserId,
       roleName: dto.roleName,
     });
 
     return ProjectMemberResponseDto.fromResult(result);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, AccessControlGuard)
+  @RequireRoles({
+    scope: 'project',
+    roles: ['ADMIN'],
+    allowWorkspaceOwner: true,
+  })
   @Delete(':memberId')
   async removeProjectMember(
     @CurrentUser('userId') actorUserId: string,

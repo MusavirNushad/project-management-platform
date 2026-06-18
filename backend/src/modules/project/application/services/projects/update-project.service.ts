@@ -11,20 +11,17 @@ import type {
 import {
   InvalidProjectDateRangeError,
   ProjectNotFoundError,
-  ProjectWorkspaceAccessDeniedError,
   ProjectWorkspaceNotFoundError,
 } from '../../../domain/errors/project-domain.errors';
 
 import { ProjectDescription } from '../../../domain/value-objects/project-description.vo';
 import { ProjectId } from '../../../domain/value-objects/project-id.vo';
 import { ProjectTitle } from '../../../domain/value-objects/project-title.vo';
-import { UserId } from '../../../domain/value-objects/user-id.vo';
 import { WorkspaceId } from '../../../domain/value-objects/workspace-id.vo';
 
 export type UpdateProjectInput = {
   workspaceId: string;
   projectId: string;
-  userId: string;
   title?: string;
   description?: string | null;
   startDate?: string | null;
@@ -50,27 +47,17 @@ export class UpdateProjectService {
   constructor(
     @Inject(PROJECT_REPOSITORY)
     private readonly projectRepository: ProjectRepositoryPort,
-  ) {}
+  ) { }
 
   async execute(input: UpdateProjectInput): Promise<UpdateProjectResult> {
     const workspaceId = WorkspaceId.create(input.workspaceId);
     const projectId = ProjectId.create(input.projectId);
-    const userId = UserId.create(input.userId);
 
     const workspaceExists =
       await this.projectRepository.workspaceExists(workspaceId);
 
     if (!workspaceExists) {
       throw new ProjectWorkspaceNotFoundError();
-    }
-
-    const isWorkspaceOwner = await this.projectRepository.isWorkspaceOwner(
-      workspaceId,
-      userId,
-    );
-
-    if (!isWorkspaceOwner) {
-      throw new ProjectWorkspaceAccessDeniedError();
     }
 
     const project = await this.projectRepository.findByWorkspaceAndId(

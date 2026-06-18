@@ -5,7 +5,6 @@ import { IdentityModule } from '../identity/identity.module';
 
 import { PrismaModule } from '../../shared/infrastructure/database/prisma.module';
 
-import { ReportPermissionService } from './application/services/permissions/report-permission.service';
 import { CreateReportService } from './application/services/reports/create-report.service';
 import { GenerateReportSummaryService } from './application/services/reports/generate-report-summary.service';
 import { GetProjectReportsService } from './application/services/reports/get-project-reports.service';
@@ -21,7 +20,6 @@ import { ReportController } from './presentation/controllers/report.controller';
   imports: [PrismaModule, IdentityModule, AccessControlModule],
   controllers: [ReportController],
   providers: [
-    ReportPermissionService,
     GenerateReportSummaryService,
     CreateReportService,
     GetProjectReportsService,
@@ -32,4 +30,4 @@ import { ReportController } from './presentation/controllers/report.controller';
     },
   ],
 })
-export class ReportModule {}
+export class ReportModule { }

@@ -8,12 +8,8 @@ import type {
   ProjectStatus,
 } from '../../../domain/entities/project.entity';
 
-import {
-  ProjectWorkspaceAccessDeniedError,
-  ProjectWorkspaceNotFoundError,
-} from '../../../domain/errors/project-domain.errors';
+import { ProjectWorkspaceNotFoundError } from '../../../domain/errors/project-domain.errors';
 
-import { UserId } from '../../../domain/value-objects/user-id.vo';
 import { WorkspaceId } from '../../../domain/value-objects/workspace-id.vo';
 
 export type ProjectListItemResult = {
@@ -31,7 +27,6 @@ export type ProjectListItemResult = {
 
 export type GetWorkspaceProjectsInput = {
   workspaceId: string;
-  userId: string;
 };
 
 export type GetWorkspaceProjectsResult = {
@@ -44,28 +39,18 @@ export class GetWorkspaceProjectsService {
   constructor(
     @Inject(PROJECT_REPOSITORY)
     private readonly projectRepository: ProjectRepositoryPort,
-  ) {}
+  ) { }
 
   async execute(
     input: GetWorkspaceProjectsInput,
   ): Promise<GetWorkspaceProjectsResult> {
     const workspaceId = WorkspaceId.create(input.workspaceId);
-    const userId = UserId.create(input.userId);
 
     const workspaceExists =
       await this.projectRepository.workspaceExists(workspaceId);
 
     if (!workspaceExists) {
       throw new ProjectWorkspaceNotFoundError();
-    }
-
-    const isWorkspaceMember = await this.projectRepository.isWorkspaceMember(
-      workspaceId,
-      userId,
-    );
-
-    if (!isWorkspaceMember) {
-      throw new ProjectWorkspaceAccessDeniedError();
     }
 
     const projects =

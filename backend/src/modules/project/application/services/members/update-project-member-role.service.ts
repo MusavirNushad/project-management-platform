@@ -12,22 +12,17 @@ import {
   ProjectMemberProjectMismatchError,
   ProjectNotFoundError,
   ProjectRoleNotFoundError,
-  ProjectWorkspaceAccessDeniedError,
   ProjectWorkspaceNotFoundError,
 } from '../../../domain/errors/project-domain.errors';
 
 import { ProjectId } from '../../../domain/value-objects/project-id.vo';
 import { ProjectMemberId } from '../../../domain/value-objects/project-member-id.vo';
-import { UserId } from '../../../domain/value-objects/user-id.vo';
 import { WorkspaceId } from '../../../domain/value-objects/workspace-id.vo';
-
-import { ProjectMemberPermissionService } from './project-member-permission.service';
 
 export type UpdateProjectMemberRoleInput = {
   workspaceId: string;
   projectId: string;
   memberId: string;
-  actorUserId: string;
   roleName: ProjectAssignableRoleName;
 };
 
@@ -38,8 +33,7 @@ export class UpdateProjectMemberRoleService {
   constructor(
     @Inject(PROJECT_REPOSITORY)
     private readonly projectRepository: ProjectRepositoryPort,
-    private readonly projectMemberPermissionService: ProjectMemberPermissionService,
-  ) {}
+  ) { }
 
   async execute(
     input: UpdateProjectMemberRoleInput,
@@ -47,7 +41,6 @@ export class UpdateProjectMemberRoleService {
     const workspaceId = WorkspaceId.create(input.workspaceId);
     const projectId = ProjectId.create(input.projectId);
     const memberId = ProjectMemberId.create(input.memberId);
-    const actorUserId = UserId.create(input.actorUserId);
 
     const workspaceExists =
       await this.projectRepository.workspaceExists(workspaceId);
@@ -63,17 +56,6 @@ export class UpdateProjectMemberRoleService {
 
     if (!project) {
       throw new ProjectNotFoundError();
-    }
-
-    const canManageProjectMembers =
-      await this.projectMemberPermissionService.canManageProjectMembers({
-        workspaceId,
-        projectId,
-        actorUserId,
-      });
-
-    if (!canManageProjectMembers) {
-      throw new ProjectWorkspaceAccessDeniedError();
     }
 
     const member =

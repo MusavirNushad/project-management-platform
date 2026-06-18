@@ -10,7 +10,6 @@ import type { ProjectStatus } from '../../../domain/entities/project.entity';
 import {
   InvalidProjectDateRangeError,
   ProjectCreatorRoleNotFoundError,
-  ProjectWorkspaceAccessDeniedError,
   ProjectWorkspaceNotFoundError,
 } from '../../../domain/errors/project-domain.errors';
 
@@ -50,7 +49,7 @@ export class CreateProjectService {
   constructor(
     @Inject(PROJECT_REPOSITORY)
     private readonly projectRepository: ProjectRepositoryPort,
-  ) {}
+  ) { }
 
   async execute(input: CreateProjectInput): Promise<CreateProjectResult> {
     const workspaceId = WorkspaceId.create(input.workspaceId);
@@ -67,15 +66,6 @@ export class CreateProjectService {
 
     if (!workspaceExists) {
       throw new ProjectWorkspaceNotFoundError();
-    }
-
-    const isWorkspaceOwner = await this.projectRepository.isWorkspaceOwner(
-      workspaceId,
-      createdBy,
-    );
-
-    if (!isWorkspaceOwner) {
-      throw new ProjectWorkspaceAccessDeniedError();
     }
 
     const creatorRoleId = await this.projectRepository.findRoleIdByName(

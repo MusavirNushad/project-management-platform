@@ -1,7 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
-import { ReportPermissionService } from '../permissions/report-permission.service';
 import {
   GenerateReportSummaryService,
   GenerateReportSummaryResult,
@@ -17,7 +16,6 @@ import { ReportEntity } from '../../../domain/entities/report.entity';
 
 import {
   InvalidReportDateRangeError,
-  ReportProjectAccessDeniedError,
   ReportProjectNotFoundError,
   ReportWorkspaceNotFoundError,
 } from '../../../domain/errors/report-domain.errors';
@@ -47,9 +45,8 @@ export class CreateReportService {
   constructor(
     @Inject(REPORT_REPOSITORY)
     private readonly reportRepository: ReportRepositoryPort,
-    private readonly reportPermissionService: ReportPermissionService,
     private readonly generateReportSummaryService: GenerateReportSummaryService,
-  ) {}
+  ) { }
 
   async execute(input: CreateReportInput): Promise<CreateReportResult> {
     const workspaceId = WorkspaceId.create(input.workspaceId);
@@ -73,16 +70,6 @@ export class CreateReportService {
 
     if (!projectExists) {
       throw new ReportProjectNotFoundError();
-    }
-
-    const canCreateReport = await this.reportPermissionService.canCreateReport({
-      workspaceId,
-      projectId,
-      userId,
-    });
-
-    if (!canCreateReport) {
-      throw new ReportProjectAccessDeniedError();
     }
 
     const report = ReportEntity.create({
