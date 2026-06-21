@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { SharedModule } from '../../shared/shared.module';
 
 import { PrismaModule } from '../../shared/infrastructure/database/prisma.module';
 import { SocketAuthenticationService } from '../../shared/infrastructure/realtime/services/socket-authentication.service';
@@ -26,10 +27,9 @@ import { WorkspaceMemberController } from './presentation/controllers/workspace-
 import { WorkspaceRealtimeGateway } from './presentation/gateways/workspace-realtime.gateway';
 
 import { WorkspaceRealtimeAccessGuard } from './presentation/guards/workspace-realtime-access.guard';
-import { WorkspaceRealtimeAuthenticatedGuard } from './presentation/guards/workspace-realtime-authenticated.guard';
 
 @Module({
-  imports: [PrismaModule, IdentityModule, AccessControlModule],
+  imports: [PrismaModule, IdentityModule, AccessControlModule, SharedModule],
   controllers: [WorkspaceController, WorkspaceMemberController],
   providers: [
     SocketAuthenticationService,
@@ -45,7 +45,6 @@ import { WorkspaceRealtimeAuthenticatedGuard } from './presentation/guards/works
 
     WorkspaceRealtimeGateway,
     WorkspaceRealtimeEventsService,
-    WorkspaceRealtimeAuthenticatedGuard,
     WorkspaceRealtimeAccessGuard,
 
     {

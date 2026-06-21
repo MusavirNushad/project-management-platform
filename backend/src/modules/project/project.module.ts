@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { SharedModule } from '../../shared/shared.module';
 
 import { PrismaModule } from '../../shared/infrastructure/database/prisma.module';
 import { SocketAuthenticationService } from '../../shared/infrastructure/realtime/services/socket-authentication.service';
@@ -19,7 +20,6 @@ import { GetProjectByIdService } from './application/services/projects/get-proje
 import { GetWorkspaceProjectsService } from './application/services/projects/get-workspace-projects.service';
 import { UpdateProjectService } from './application/services/projects/update-project.service';
 
-import { ProjectRealtimeAuthenticatedGuard } from './presentation/guards/project-realtime-authenticated.guard';
 import { ProjectRealtimeProjectAccessGuard } from './presentation/guards/project-realtime-project-access.guard';
 
 import { PROJECT_REPOSITORY } from './domain/ports/project.repository.port';
@@ -30,7 +30,8 @@ import { ProjectMemberController } from './presentation/controllers/project-memb
 import { ProjectController } from './presentation/controllers/project.controller';
 
 @Module({
-  imports: [PrismaModule, IdentityModule, AccessControlModule],
+
+  imports: [PrismaModule, IdentityModule, AccessControlModule, SharedModule],
   controllers: [ProjectController, ProjectMemberController],
   providers: [
     SocketAuthenticationService,
@@ -42,7 +43,6 @@ import { ProjectController } from './presentation/controllers/project.controller
 
     ProjectRealtimeGateway,
     ProjectRealtimeEventsService,
-    ProjectRealtimeAuthenticatedGuard,
     ProjectRealtimeProjectAccessGuard,
 
     GetProjectMembersService,
@@ -57,4 +57,3 @@ import { ProjectController } from './presentation/controllers/project.controller
   ],
 })
 export class ProjectModule { }
-

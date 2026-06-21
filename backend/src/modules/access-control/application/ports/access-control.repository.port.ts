@@ -1,4 +1,3 @@
-// src/modules/access-control/application/ports/access-control.repository.port.ts
 
 import type {
   ProjectRoleName,

@@ -18,11 +18,13 @@ import {
     realtimeValidationPipe,
 } from '../../../../shared/infrastructure/realtime/config/realtime-gateway.config';
 
+
+import { RealtimeAuthenticatedGuard } from '../../../../shared/infrastructure/realtime/guards/realtime-authenticated.guard';
+
 import { TaskRealtimeEventsService } from '../../application/services/task-realtime/task-realtime-events.service';
 import { TaskRealtimeEvent } from '../../application/types/task-realtime-event.types';
 import { TaskRealtimeRoom } from '../../application/types/task-realtime-room.types';
 
-import { TaskRealtimeAuthenticatedGuard } from '../guards/task-realtime-authenticated.guard';
 import { TaskRealtimeTaskAccessGuard } from '../guards/task-realtime-task-access.guard';
 
 import { JoinTaskRoomDto } from '../dtos/requests/join-task-room.dto';
@@ -76,7 +78,8 @@ export class TaskRealtimeGateway
         );
     }
 
-    @UseGuards(TaskRealtimeAuthenticatedGuard, TaskRealtimeTaskAccessGuard)
+
+    @UseGuards(RealtimeAuthenticatedGuard, TaskRealtimeTaskAccessGuard)
     @SubscribeMessage('join:task')
     async handleJoinTask(
         @ConnectedSocket() client: AuthenticatedSocket,
@@ -96,7 +99,8 @@ export class TaskRealtimeGateway
         };
     }
 
-    @UseGuards(TaskRealtimeAuthenticatedGuard)
+
+    @UseGuards(RealtimeAuthenticatedGuard)
     @SubscribeMessage('leave:task')
     async handleLeaveTask(
         @ConnectedSocket() client: AuthenticatedSocket,

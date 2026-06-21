@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { SharedModule } from '../../shared/shared.module';
 
 import { AccessControlModule } from '../access-control/access-control.module';
 import { IdentityModule } from '../identity/identity.module';
@@ -25,7 +26,6 @@ import { UpdateTaskCommentService } from './application/services/comments/update
 import { TaskReporterOrProjectAdminGuard } from './presentation/guards/task-reporter-or-project-admin.guard';
 import { TaskCommentAuthorGuard } from './presentation/guards/task-comment-author.guard';
 import { TaskCommentAuthorOrProjectAdminGuard } from './presentation/guards/task-comment-author-or-project-admin.guard';
-import { TaskRealtimeAuthenticatedGuard } from './presentation/guards/task-realtime-authenticated.guard';
 import { TaskRealtimeTaskAccessGuard } from './presentation/guards/task-realtime-task-access.guard';
 
 import { TASK_REPOSITORY } from './domain/ports/task.repository.port';
@@ -37,14 +37,13 @@ import { TaskAssigneeController } from './presentation/controllers/task-assignee
 import { TaskCommentController } from './presentation/controllers/task-comment.controller';
 
 @Module({
-  imports: [PrismaModule, IdentityModule, AccessControlModule],
+  imports: [PrismaModule, IdentityModule, AccessControlModule, SharedModule],
   controllers: [TaskController, TaskAssigneeController, TaskCommentController],
   providers: [
     SocketAuthenticationService,
 
     TaskRealtimeGateway,
     TaskRealtimeEventsService,
-    TaskRealtimeAuthenticatedGuard,
     TaskRealtimeTaskAccessGuard,
 
     CreateTaskService,

@@ -18,11 +18,13 @@ import {
     realtimeValidationPipe,
 } from '../../../../shared/infrastructure/realtime/config/realtime-gateway.config';
 
+
+import { RealtimeAuthenticatedGuard } from '../../../../shared/infrastructure/realtime/guards/realtime-authenticated.guard';
+
 import { ProjectRealtimeEventsService } from '../../application/services/project-realtime/project-realtime-events.service';
 import { ProjectRealtimeEvent } from '../../application/types/project-realtime-event.types';
 import { ProjectRealtimeRoom } from '../../application/types/project-realtime-room.types';
 
-import { ProjectRealtimeAuthenticatedGuard } from '../guards/project-realtime-authenticated.guard';
 import { ProjectRealtimeProjectAccessGuard } from '../guards/project-realtime-project-access.guard';
 
 import { JoinProjectRoomDto } from '../dtos/requests/join-project-room.dto';
@@ -76,7 +78,8 @@ export class ProjectRealtimeGateway
         );
     }
 
-    @UseGuards(ProjectRealtimeAuthenticatedGuard, ProjectRealtimeProjectAccessGuard)
+
+    @UseGuards(RealtimeAuthenticatedGuard, ProjectRealtimeProjectAccessGuard)
     @SubscribeMessage('join:project')
     async handleJoinProject(
         @ConnectedSocket() client: AuthenticatedSocket,
@@ -96,7 +99,8 @@ export class ProjectRealtimeGateway
         };
     }
 
-    @UseGuards(ProjectRealtimeAuthenticatedGuard)
+
+    @UseGuards(RealtimeAuthenticatedGuard)
     @SubscribeMessage('leave:project')
     async handleLeaveProject(
         @ConnectedSocket() client: AuthenticatedSocket,
